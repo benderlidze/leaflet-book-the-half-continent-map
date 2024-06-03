@@ -51,6 +51,7 @@
             <div id="map"></div>
         </div>
         <div id="right">
+            <div id="search"></div>
         </div>
     </div>
 
@@ -111,6 +112,43 @@
 
         L.marker(rc.unproject([23622, 18315]))
             .addTo(map);
+
+        function searchAutocomplete() {
+            const search = document.getElementById('search');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Search...';
+            search.appendChild(input);
+
+            const results = document.createElement('div');
+            results.style = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: auto; background: white; z-index: 1000; display: none;';
+            search.appendChild(results);
+
+            input.addEventListener('input', e => {
+                const value = e.target.value;
+                if (value.length < 3) {
+                    results.style.display = 'none';
+                    return;
+                }
+                results.style.display = 'block';
+                results.innerHTML = '';
+                const filtered = data.filter(d => d.name.toLowerCase().includes(value.toLowerCase()));
+                filtered.forEach(d => {
+                    const div = document.createElement('div');
+                    div.innerHTML = d.name;
+                    div.style = 'padding: 10px; border-bottom: 1px solid #ccc; cursor: pointer;';
+                    div.addEventListener('click', () => {
+                        const { coords } = d;
+                        const unpCoords = coords.map(c => {
+                            return rc.unproject([c.x, c.y])
+                        })
+                        map.setView(unpCoords[0], 4)
+                        results.style.display = 'none';
+                    })
+                    results.appendChild(div);
+                })
+            })
+        }
 
 
         function drawPolygon({ coords, color = "white", dashArray = false, data }) {
