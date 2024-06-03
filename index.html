@@ -46,7 +46,7 @@
             z-index: 10000;
         }
 
-        #info{
+        #info {
             padding: 10px;
         }
 
@@ -219,10 +219,89 @@
             console.log('11', 11);
         }
 
+        function drawGeometry(data) {
+
+            const { geometry, color, type } = data
+            if (!geometry) return
+            //leafelt bounds 
+            const mapBounds = L.latLngBounds();
+            const unpCoords = geometry.map(c => {
+                mapBounds.extend(rc.unproject([c.x, c.y]))
+                return rc.unproject([c.x, c.y])
+            })
+            map.fitBounds(mapBounds);
+
+
+            if (type === 'polygon') {
+                const polygon = L.polygon(unpCoords, {
+                    color,
+                    "fillOpacity": 0.5,
+                    "opacity": 0.5
+                }).addTo(map);
+                return polygon;
+            }
+
+            if (type === 'line') {
+                const line = L.polyline(unpCoords, {
+                    color,
+                    "fillOpacity": 1,
+                    "opacity": 1,
+                    "weight": 5
+                }).addTo(map);
+                return line;
+            }
+        }
+
         const searchData = [
-            { id: 1, name: "Blemkool", type: "city", info: "Some info about the city", x: 10842, y: 9130 },
-            { id: 2, name: "TooGoom", type: "city", info: "Some info about the city", x: 9997, y: 8360 },
-            { id: 3, name: "Heliodor", type: "city", info: "Some info about the city", x: 22506, y: 2784 }
+            { id: 1, name: "Blemkool", type: "point", info: "Some info about the city", x: 10842, y: 9130 },
+            { id: 2, name: "TooGoom", type: "point", info: "Some info about the city", x: 9997, y: 8360 },
+            { id: 3, name: "Heliodor", type: "point", info: "Some info about the city", x: 22506, y: 2784 },
+            {
+                id: 4,
+                name: "Burgundis",
+                type: "polygon",
+                color: "green",
+                geometry: [
+                    { x: 13300, y: 10088 },
+                    { x: 14096, y: 11000 },
+                    { x: 13976, y: 11300 },
+                    { x: 13760, y: 11436 },
+                    { x: 14132, y: 11932 },
+                    { x: 14256, y: 12104 },
+                    { x: 14292, y: 11796 },
+                    { x: 14520, y: 11708 },
+                    { x: 14756, y: 11932 },
+                    { x: 14832, y: 11920 },
+                    { x: 14836, y: 12244 },
+                    { x: 15464, y: 11276 },
+                    { x: 13744, y: 9480 },
+                    { x: 13420, y: 9540 },
+                    { x: 13324, y: 9632 },
+                    { x: 13324, y: 9632 },
+                ],
+                info: "Some info about the Burgundis area"
+            },
+            {
+                id: 5,
+                name: "Humour",
+                type: "line",
+                color: "red",
+                geometry: [
+                    { x: 11744, y: 10196 },
+                    { x: 11716, y: 10074 },
+                    { x: 11748, y: 9980 },
+                    { x: 11792, y: 9904 },
+                    { x: 11838, y: 9832 },
+                    { x: 11874, y: 9464 },
+                    { x: 11896, y: 9318 },
+                    { x: 11914, y: 9120 },
+                    { x: 12008, y: 8926 },
+                    { x: 12064, y: 8858 },
+                    { x: 12098, y: 8778 },
+                    { x: 12140, y: 8724 },
+                ],
+                info: "Some info about the river"
+            }
         ]
 
         autocomplete(document.getElementById("myInput"), searchData);
@@ -271,10 +350,25 @@
 
                             const result = searchData.find(s => s.id == id)
                             if (result) {
-                                const { x, y, info } = result
-                                map.flyTo(rc.unproject([x, y]), 7)
+                                const { x, y, info, type } = result
+                                console.log('type', type);
                                 console.log('info', info);
-                                showInfo(info)
+
+                                switch (type) {
+                                    case 'point':
+                                        showInfo(info)
+                                        map.flyTo(rc.unproject([x, y]), 7)
+                                        break;
+                                    case 'polygon':
+                                        const polygon = drawGeometry(result)
+                                        showInfo(info)
+                                        break;
+                                    case 'line':
+                                        const line = drawGeometry(result)
+                                        showInfo(info)
+                                        break;
+                                }
+
                             }
 
                             closeAllLists();
