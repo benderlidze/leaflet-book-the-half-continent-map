@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Map</title>
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-rastercoords"></script>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #main {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+        }
+
+        #left {
+            flex: 1;
+        }
+
+        #right {
+            width: 300px;
+            display: flex;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main">
+        <div id="left">
+            <div id="map"></div>
+        </div>
+        <div id="right">
+        </div>
+    </div>
+
+    <script>
+
+        const img = {
+            x: 23622,  // original width of image 
+            y: 18315   // original height of image
+        }
+
+
+        // create the map
+        var map = L.map('map', {
+            crs: L.CRS.Simple,
+            maxZoom: 7,
+            minZoom: 1,
+            zoomControl: false,
+            preferCanvas: true,
+            noWrap: true,
+            edgeBufferTiles: 20,
+            maxBounds: mapBounds,
+            maxBoundsViscosity: 1.0
+        })
+
+        var rc = new L.RasterCoords(map, [img.x, img.y])
+        var mapBounds = new L.LatLngBounds(
+            rc.unproject([1, img.y], 8),
+            rc.unproject([img.x, 1], 8)
+        );
+
+        map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
+        map.setZoom(2)
+
+        const tileLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+            noWrap: true,
+            preferCanvas: true,
+            bounds: mapBounds
+        }).addTo(map)
+
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        map.setMaxBounds(mapBounds);
+
+        map.on("click", e => {
+            const c = rc.project(e.latlng);
+            console.log('c', e.latlng, c);
+            const { x, y } = c
+        })
+
+        function unproject(arr) {
+            const { lat, lng } = rc.unproject(arr)
+            return [lng, lat]
+        }
+
+
+        L.marker(rc.unproject([0, 0]))
+            .addTo(map);
+
+        L.marker(rc.unproject([23622, 18315]))
+            .addTo(map);
+
+
+        function drawPolygon({ coords, color = "white", dashArray = false, data }) {
+
+            console.log('data', coords, data.type,);
+
+            const popupContent = `
+                <div class="pop">
+                    <div class="header">${data.name}</div>
+                    <div class="pop-content">
+                        ${data.descr}
+                    </div>
+                </div>
+            `
+            const unpCoords = coords.map(c => {
+                return rc.unproject([c.x, c.y])
+            })
+
+            console.log('unpCoords', unpCoords);
+
+            const polygon = L.polygon(unpCoords, {
+                color,
+                "fillOpacity": 0.5,
+                // dashArray: dashArray ? '5,10' : '',
+                "opacity": 0.5
+            });
+
+            var LeafIcon = L.Icon.extend({
+                options: {
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                    popupAnchor: [0, -10]
+                }
+            });
+            var greenIcon = new LeafIcon({
+                iconUrl: 'icons/icon.png',
+            })
+            L.marker(unpCoords[0], { icon: greenIcon })
+                .bindPopup(popupContent)
+                .addTo(map);
+
+
+            return polygon;
+        }
+
+    </script>
+
+
+
+</body>
+
+</html>
