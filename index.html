@@ -40,6 +40,68 @@
         #right {
             width: 300px;
             display: flex;
+            box-sizing: border-box;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+        }
+
+        #info{
+            padding: 10px;
+        }
+
+        .autocomplete {
+            /*the container must be positioned relative:*/
+            position: relative;
+            display: inline-block;
+        }
+
+        .autocomplete>input {
+            border: 1px solid transparent;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .autocomplete>input[type=text] {
+            background-color: #f1f1f1;
+            width: 100%;
+        }
+
+        .autocomplete>input[type=submit] {
+            background-color: DodgerBlue;
+            color: #fff;
+        }
+
+        .autocomplete-items {
+            /* position: absolute; */
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            /*position the autocomplete items to be the same width as the container:*/
+            top: 100%;
+            left: 0;
+            right: 0;
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+
+        .autocomplete-items div:hover {
+            /*when hovering an item:*/
+            background-color: #e9e9e9;
+        }
+
+        .autocomplete-active {
+            /*when navigating through the items using the arrow keys:*/
+            background-color: DodgerBlue !important;
+            color: #ffffff;
         }
     </style>
 </head>
@@ -51,11 +113,15 @@
             <div id="map"></div>
         </div>
         <div id="right">
-            <div id="search"></div>
+            <div class="autocomplete" style="width:100%;">
+                <input id="myInput" type="text" name="myCountry" placeholder="Search">
+            </div>
+            <div id="info"></div>
         </div>
     </div>
 
     <script>
+        const info = document.getElementById("info")
 
         const img = {
             x: 23622,  // original width of image 
@@ -106,54 +172,7 @@
             return [lng, lat]
         }
 
-
-        L.marker(rc.unproject([0, 0]))
-            .addTo(map);
-
-        L.marker(rc.unproject([23622, 18315]))
-            .addTo(map);
-
-        function searchAutocomplete() {
-            const search = document.getElementById('search');
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.placeholder = 'Search...';
-            search.appendChild(input);
-
-            const results = document.createElement('div');
-            results.style = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: auto; background: white; z-index: 1000; display: none;';
-            search.appendChild(results);
-
-            input.addEventListener('input', e => {
-                const value = e.target.value;
-                if (value.length < 3) {
-                    results.style.display = 'none';
-                    return;
-                }
-                results.style.display = 'block';
-                results.innerHTML = '';
-                const filtered = data.filter(d => d.name.toLowerCase().includes(value.toLowerCase()));
-                filtered.forEach(d => {
-                    const div = document.createElement('div');
-                    div.innerHTML = d.name;
-                    div.style = 'padding: 10px; border-bottom: 1px solid #ccc; cursor: pointer;';
-                    div.addEventListener('click', () => {
-                        const { coords } = d;
-                        const unpCoords = coords.map(c => {
-                            return rc.unproject([c.x, c.y])
-                        })
-                        map.setView(unpCoords[0], 4)
-                        results.style.display = 'none';
-                    })
-                    results.appendChild(div);
-                })
-            })
-        }
-
-
         function drawPolygon({ coords, color = "white", dashArray = false, data }) {
-
-            console.log('data', coords, data.type,);
 
             const popupContent = `
                 <div class="pop">
@@ -194,6 +213,132 @@
             return polygon;
         }
 
+        function showInfo(data) {
+            console.log('info', data);
+            info.innerHTML = data
+            console.log('11', 11);
+        }
+
+        const searchData = [
+            { id: 1, name: "Blemkool", type: "city", info: "Some info about the city", x: 10842, y: 9130 },
+            { id: 2, name: "TooGoom", type: "city", info: "Some info about the city", x: 9997, y: 8360 },
+            { id: 3, name: "Heliodor", type: "city", info: "Some info about the city", x: 22506, y: 2784 }
+        ]
+
+        autocomplete(document.getElementById("myInput"), searchData);
+
+        function autocomplete(inp, arr) {
+            /*the autocomplete function takes two arguments,
+            the text field element and an array of possible autocompleted values:*/
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+                    /*check if the item starts with the same letters as the text field value:*/
+                    if (arr[i].name.toUpperCase().includes(val.toUpperCase())) {
+
+                        const { name, id } = arr[i]
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+
+                        //replace the matching part with bold text
+                        //b.innerHTML += name.replace(new RegExp(val, 'gi'), (match) => `<strong>${match}</strong>`)
+                        b.innerHTML += name.replace(new RegExp(val, 'i'), (match) => `<strong>${match}</strong>`);
+
+
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += `<input type='hidden' data-name="${name}" value="${id}">`;
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", function (e) {
+
+                            const id = this.getElementsByTagName("input")[0].value;
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].dataset.name;
+                            /*close the list of autocompleted values,
+                            (or any other open lists of autocompleted values:*/
+
+                            const result = searchData.find(s => s.id == id)
+                            if (result) {
+                                const { x, y, info } = result
+                                map.flyTo(rc.unproject([x, y]), 7)
+                                console.log('info', info);
+                                showInfo(info)
+                            }
+
+                            closeAllLists();
+                        });
+                        a.appendChild(b);
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
     </script>
 
 
