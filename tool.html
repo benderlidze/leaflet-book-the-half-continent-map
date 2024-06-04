@@ -13,6 +13,12 @@
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-rastercoords"></script>
 
+
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6"></script>
+
     <style>
         html,
         body {
@@ -105,13 +111,21 @@
             color: #ffffff;
         }
 
-        #full-map {
+        #container {
+            display: flex;
+            flex-direction: column;
             position: absolute;
             top: 80px;
             left: 10px;
             z-index: 1000;
-            width: 50px;
-            height: 50px;
+            gap: 5px;
+        }
+
+        #full-map,
+        #idlewild-inset,
+        #brandenlands-inset {
+            padding: 10px;
+            z-index: 1000;
             background-color: white;
             display: flex;
             justify-content: center;
@@ -121,8 +135,26 @@
             cursor: pointer;
             flex-direction: column;
             text-align: center;
-
             border: 1px solid #535353;
+        }
+
+        #button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            flex: 1;
+
         }
     </style>
 </head>
@@ -131,7 +163,11 @@
 
     <div id="main">
         <div id="left">
-            <div id="full-map">Full Map</div>
+            <div id="container">
+                <div id="full-map">Full Map</div>
+                <div id="idlewild-inset">Idlewild </div>
+                <div id="brandenlands-inset">Brandenlands </div>
+            </div>
             <div id="map"></div>
         </div>
         <div id="right">
@@ -139,13 +175,30 @@
                 <input id="myInput" type="text" name="myCountry" placeholder="Search">
             </div>
             <div id="info"></div>
+
+            <div id="button-container">
+                <button id="generate">Genrate</button>
+                <button id="clear">Clear</button>
+            </div>
+
+            <div id="coords"></div>
         </div>
     </div>
 
     <script>
+        const coordsDiv = document.getElementById("coords")
         const info = document.getElementById("info")
         const fullMap = document.getElementById("full-map")
+
+        const idlewildInset = document.getElementById("idlewild-inset")
+        const brandenlandsInset = document.getElementById("brandenlands-inset")
+
+        const generateButton = document.getElementById("generate")
+        const clearButton = document.getElementById("clear")
+
         const geometryLayers = []
+        const tempCoords = []
+
         const img = {
             x: 23622,  // original width of image 
             y: 18315   // original height of image
@@ -192,6 +245,27 @@
             maxBoundsViscosity: 1.0
         })
 
+        // add leaflet.pm controls to the map
+        map.pm.addControls({
+            position: 'topright',
+            drawMarker: true,
+            drawCircleMarker: false,
+            drawPolygon: true,
+            drawLineString: true,
+            drawCircle: false,
+            drawPolyline: true,
+            drawRectangle: false,
+            drawText: false,
+            cutPolygon: false
+        });
+
+        map.on('pm:create', ({
+            workingLayer
+        }) => {
+            self_drawn = map.pm.getGeomanDrawLayers(true)
+            console.log(self_drawn.toGeoJSON())
+        });
+
         var rc = new L.RasterCoords(map, [img.x, img.y])
         var mapBounds = new L.LatLngBounds(
             rc.unproject([1, img.y], 8),
@@ -223,28 +297,39 @@
             const c = rc.project(e.latlng);
             console.log('c', e.latlng, c);
             const { x, y } = c
+            tempCoords.push({ x, y })
+            coordsDiv.innerHTML = tempCoords.map(c => `{x: ${c.x.toFixed(0)}, y: ${c.y.toFixed(0)}},`).join('<br>')
         })
+
+
+        generateButton.addEventListener("click", () => {
+            var layers = L.PM.Utils.findLayers(map);
+            var group = L.featureGroup();
+            layers.forEach((layer) => {
+                group.addLayer(layer);
+            });
+            const shapes = group.toGeoJSON();
+            const points = turf.coordAll(shapes)
+            const coords = points.map(p => {
+                const c = rc.project(p);
+                const { x, y } = c
+                return { x: Math.abs(y), y: Math.abs(x) }
+            })
+            coordsDiv.innerHTML = coords.map(c => `{"x": ${c.x.toFixed(0)}, "y": ${c.y.toFixed(0)}}`).join(',<br>')
+        })
+
+        clearButton.addEventListener("click", () => {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            coordsDiv.innerHTML = ''
+        })
+
+
 
         // ------------- SWITCH MAPS -----------------
         fullMap.addEventListener('click', switchToMain)
-        const BrandenlandsInsetPolygon = drawGeometry({
-            geometry: BrandenlandsInset.geometry,
-            color: "#e2d5e9",
-            type: "polygon",
-            fit: false,
-            stroke: "red"
-        }, false)
+        idlewildInset.addEventListener('click', switchToIdlewildInset)
+        brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
 
-        BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
-        const IdlewildInsetPolygon = drawGeometry({
-            geometry: IdlewildInset.geometry,
-            color: "#c9e2d4",
-            type: "polygon",
-            fit: false,
-            stroke: "red"
-        }, false)
-
-        IdlewildInsetPolygon.on('click', switchToIdlewildInset)
         function switchToIdlewildInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
 
@@ -258,9 +343,8 @@
             map.setMaxZoom(5)
             map.fitBounds(mapBounds);
             tileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
             IdlewildInsetTileLayer.addTo(map)
-            BrandenlandsInsetPolygon.remove()
-            IdlewildInsetPolygon.remove()
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -275,9 +359,8 @@
             map.setMaxZoom(4)
             map.fitBounds(mapBounds);
             tileLayer.remove()
+            IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.addTo(map)
-            BrandenlandsInsetPolygon.remove()
-            IdlewildInsetPolygon.remove()
         }
         function switchToMain() {
             tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
@@ -290,19 +373,12 @@
             map.setMaxZoom(7)
             map.setZoom(2)
 
-            BrandenlandsInsetPolygon.addTo(map)
-            IdlewildInsetPolygon.addTo(map)
             tileLayer.addTo(map)
 
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
-
             geometryLayers.forEach(l => l.removable && l.geom.remove())
-
         }
-
-
-
 
         function unproject(arr) {
             const { lat, lng } = rc.unproject(arr)
@@ -371,71 +447,12 @@
             }
         }
 
-        const searchData = [
-            { id: 1, name: "Blemkool", type: "point", info: "Some info about the city", geometry: [{ x: 10842, y: 9130 }] },
-            { id: 2, name: "TooGoom", type: "point", info: "Some info about the city", geometry: [{ x: 9997, y: 8360 }] },
-            { id: 3, name: "Heliodor", type: "point", info: "Some info about the city", geometry: [{ x: 22506, y: 2784 }] },
-            {
-                id: 4,
-                name: "Burgundis",
-                type: "polygon",
-                color: "green",
-                geometry: [
-                    { x: 13300, y: 10088 },
-                    { x: 14096, y: 11000 },
-                    { x: 13976, y: 11300 },
-                    { x: 13760, y: 11436 },
-                    { x: 14132, y: 11932 },
-                    { x: 14256, y: 12104 },
-                    { x: 14292, y: 11796 },
-                    { x: 14520, y: 11708 },
-                    { x: 14756, y: 11932 },
-                    { x: 14832, y: 11920 },
-                    { x: 14836, y: 12244 },
-                    { x: 15464, y: 11276 },
-                    { x: 13744, y: 9480 },
-                    { x: 13420, y: 9540 },
-                    { x: 13324, y: 9632 },
-                    { x: 13324, y: 9632 },
-                ],
-                info: "Some info about the Burgundis area"
-            },
-            {
-                id: 5,
-                name: "Humour",
-                type: "line",
-                color: "red",
-                geometry: [
-                    { x: 11744, y: 10196 },
-                    { x: 11716, y: 10074 },
-                    { x: 11748, y: 9980 },
-                    { x: 11792, y: 9904 },
-                    { x: 11838, y: 9832 },
-                    { x: 11874, y: 9464 },
-                    { x: 11896, y: 9318 },
-                    { x: 11914, y: 9120 },
-                    { x: 12008, y: 8926 },
-                    { x: 12064, y: 8858 },
-                    { x: 12098, y: 8778 },
-                    { x: 12140, y: 8724 },
-                ],
-                info: "Some info about the river"
-            },
-            {
-                id: 6,
-                tiles: mapTilesNames.IdlewildInset,
-                name: "Winstermill",
-                type: "point",
-                color: "red",
-                geometry: [{
-                    x: 4168,
-                    y: 7500
-                }],
-                info: `Winstermill, the River ~ ancient waterway draining out of the swamps of the Gight in Catalain and running south to empty into the Grume.It is the main line of communication for great cities such as Catalain, Andover, Boschenberg and Proud Sulking, as well as many smaller towns and fishing villages.Once threwdish and haunted by all kinds of monsters, the Humour has been tamed by centuries of use by everymen, making it safer, although not monster- free. `
-            }
-        ]
-
-        autocomplete(document.getElementById("myInput"), searchData);
+        fetch("data.json")
+            .then(res => res.json())
+            .then(data => {
+                console.log('data', data);
+                autocomplete(document.getElementById("myInput"), data);
+            })
 
         function autocomplete(inp, arr) {
             /*the autocomplete function takes two arguments,
@@ -479,12 +496,11 @@
                             /*close the list of autocompleted values,
                             (or any other open lists of autocompleted values:*/
 
-                            const result = searchData.find(s => s.id == id)
+                            const result = arr.find(s => s.id == id)
                             if (result) {
                                 const { x, y, info, type, tiles = mapTilesNames.main } = result
                                 console.log('type', type);
                                 console.log('info', info);
-
 
                                 switch (tiles) {
                                     case mapTilesNames.BrandenlandsInset:
@@ -515,8 +531,6 @@
                                         showInfo(info)
                                         break;
                                 }
-
-
                             }
 
                             closeAllLists();
