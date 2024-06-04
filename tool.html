@@ -296,9 +296,9 @@
         map.on("click", e => {
             const c = rc.project(e.latlng);
             console.log('c', e.latlng, c);
-            const { x, y } = c
-            tempCoords.push({ x, y })
-            coordsDiv.innerHTML = tempCoords.map(c => `{x: ${c.x.toFixed(0)}, y: ${c.y.toFixed(0)}},`).join('<br>')
+            //     const { x, y } = c
+            //     tempCoords.push({ x, y })
+            //     coordsDiv.innerHTML = tempCoords.map(c => `{x: ${c.x.toFixed(0)}, y: ${c.y.toFixed(0)}},`).join('<br>')
         })
 
 
