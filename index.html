@@ -145,7 +145,7 @@
     <script>
         const info = document.getElementById("info")
         const fullMap = document.getElementById("full-map")
-
+        const geometryLayers = []
         const img = {
             x: 23622,  // original width of image 
             y: 18315   // original height of image
@@ -190,6 +190,8 @@
             maxBoundsViscosity: 1.0
         })
 
+
+
         var rc = new L.RasterCoords(map, [img.x, img.y])
         var mapBounds = new L.LatLngBounds(
             rc.unproject([1, img.y], 8),
@@ -230,14 +232,16 @@
             color: "orange",
             type: "polygon",
             fit: false
-        })
+        }, false)
+
         BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
         const IdlewildInsetPolygon = drawGeometry({
             geometry: IdlewildInset.geometry,
             color: "orange",
             type: "polygon",
             fit: false
-        })
+        }, false)
+
         IdlewildInsetPolygon.on('click', switchToIdlewildInset)
         function switchToIdlewildInset() {
             const { img } = IdlewildInset;
@@ -284,6 +288,9 @@
 
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
+
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
         }
 
 
@@ -299,18 +306,35 @@
             info.innerHTML = data
         }
 
-        function drawGeometry(data) {
+
+
+        function drawGeometry(data, removable = true) {
 
             const { geometry, color, type, fit = true } = data
             if (!geometry) return
             //leafelt bounds 
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
             const mapBounds = L.latLngBounds();
             const unpCoords = geometry.map(c => {
+                console.log('c', c);
                 mapBounds.extend(rc.unproject([c.x, c.y]))
                 return rc.unproject([c.x, c.y])
             })
             fit && map.fitBounds(mapBounds);
 
+
+            if (type === 'point') {
+                const point = L.circle(unpCoords[0], {
+                    color,
+                    radius: 0.5,
+                    "fillOpacity": 0.5,
+                    "opacity": 0.5
+                }).addTo(map);
+
+                geometryLayers.push({ geom: point, removable })
+                return point;
+            }
 
             if (type === 'polygon') {
                 const polygon = L.polygon(unpCoords, {
@@ -318,6 +342,7 @@
                     "fillOpacity": 0.5,
                     "opacity": 0.5
                 }).addTo(map);
+                geometryLayers.push({ geom: polygon, removable })
                 return polygon;
             }
 
@@ -328,14 +353,15 @@
                     "opacity": 1,
                     "weight": 5
                 }).addTo(map);
+                geometryLayers.push({ geom: line, removable })
                 return line;
             }
         }
 
         const searchData = [
-            { id: 1, name: "Blemkool", type: "point", info: "Some info about the city", x: 10842, y: 9130 },
-            { id: 2, name: "TooGoom", type: "point", info: "Some info about the city", x: 9997, y: 8360 },
-            { id: 3, name: "Heliodor", type: "point", info: "Some info about the city", x: 22506, y: 2784 },
+            { id: 1, name: "Blemkool", type: "point", info: "Some info about the city", geometry: [{ x: 10842, y: 9130 }] },
+            { id: 2, name: "TooGoom", type: "point", info: "Some info about the city", geometry: [{ x: 9997, y: 8360 }] },
+            { id: 3, name: "Heliodor", type: "point", info: "Some info about the city", geometry: [{ x: 22506, y: 2784 }] },
             {
                 id: 4,
                 name: "Burgundis",
@@ -388,8 +414,10 @@
                 name: "Winstermill",
                 type: "point",
                 color: "red",
-                x: 4168,
-                y: 7500,
+                geometry: [{
+                    x: 4168,
+                    y: 7500
+                }],
                 info: `Winstermill, the River ~ ancient waterway draining out of the swamps of the Gight in Catalain and running south to empty into the Grume.It is the main line of communication for great cities such as Catalain, Andover, Boschenberg and Proud Sulking, as well as many smaller towns and fishing villages.Once threwdish and haunted by all kinds of monsters, the Humour has been tamed by centuries of use by everymen, making it safer, although not monster- free. `
             }
         ]
@@ -462,7 +490,8 @@
                                 switch (type) {
                                     case 'point':
                                         showInfo(info)
-                                        map.flyTo(rc.unproject([x, y]), map.getMaxZoom())
+                                        // map.flyTo(rc.unproject([x, y]), map.getMaxZoom())
+                                        drawGeometry(result)
                                         break;
                                     case 'polygon':
                                         const polygon = drawGeometry(result)

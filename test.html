@@ -107,7 +107,7 @@
 
         #full-map {
             position: absolute;
-            top: 10px;
+            top: 80px;
             left: 10px;
             z-index: 1000;
             width: 50px;
@@ -144,18 +144,11 @@
 
     <script>
 
-        const info = document.getElementById("info")
-
-        const img = {
-            x: 2506,  // original width of image 
-            y: 2715   // original height of image
-        }
-
 
         // create the map
         var map = L.map('map', {
             crs: L.CRS.Simple,
-            maxZoom: 4,
+            maxZoom: 7,
             minZoom: 1,
             zoomControl: false,
             preferCanvas: true,
@@ -163,20 +156,25 @@
             edgeBufferTiles: 20,
             maxBoundsViscosity: 1.0
         })
+        map.setZoom(2)
+        map.setView([0, 0], 2)
 
-        var rc = new L.RasterCoords(map, [img.x, img.y])
-        map.setView([0, 0])
-        map.setZoom(1)
-
-        const tileLayer = L.tileLayer('tiles_brandenlands1/{z}/{x}/{y}.png', {
+        const tileLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
             noWrap: true,
             preferCanvas: true,
         }).addTo(map)
 
+        map.on('click', function (e) {
+            console.log(e.latlng)
+        })
 
 
+        tileLayer.setTileSize(256)
 
     </script>
+
+
+
 </body>
 
 </html>
