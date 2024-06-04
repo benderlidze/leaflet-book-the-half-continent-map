@@ -18,6 +18,7 @@
         body {
             height: 100%;
             margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
         .leaflet-container {
@@ -75,7 +76,7 @@
         }
 
         .autocomplete-items {
-            /* position: absolute; */
+            position: absolute;
             border: 1px solid #d4d4d4;
             border-bottom: none;
             border-top: none;
@@ -103,6 +104,26 @@
             background-color: DodgerBlue !important;
             color: #ffffff;
         }
+
+        #full-map {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            flex-direction: column;
+            text-align: center;
+
+            border: 1px solid #535353;
+        }
     </style>
 </head>
 
@@ -110,6 +131,7 @@
 
     <div id="main">
         <div id="left">
+            <div id="full-map">Full Map</div>
             <div id="map"></div>
         </div>
         <div id="right">
@@ -122,12 +144,34 @@
 
     <script>
         const info = document.getElementById("info")
+        const fullMap = document.getElementById("full-map")
 
         const img = {
             x: 23622,  // original width of image 
             y: 18315   // original height of image
         }
 
+        const BrandenlandsInset = {
+            geometry: [
+                { x: 11740, y: 9956 },
+                { x: 11740, y: 10784 },
+                { x: 11100, y: 10784 },
+                { x: 11100, y: 9956 },
+            ],
+            img: { x: 2506, y: 2715 },
+            tiles: "tiles_brandenlands/{z}/{x}/{y}.png"
+        }
+
+        const IdlewildInset = {
+            geometry: [
+                { x: 13248, y: 10336 },
+                { x: 13248, y: 9608 },
+                { x: 11632, y: 9608 },
+                { x: 11632, y: 10336 },
+            ],
+            img: { x: 4961, y: 3307 },
+            tiles: "tiles_idlewild/{z}/{x}/{y}.png"
+        }
 
         // create the map
         var map = L.map('map', {
@@ -147,7 +191,6 @@
             rc.unproject([1, img.y], 8),
             rc.unproject([img.x, 1], 8)
         );
-
         map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
         map.setZoom(2)
 
@@ -156,6 +199,15 @@
             preferCanvas: true,
             bounds: mapBounds
         }).addTo(map)
+
+        const BrandenlandsInsetTileLayer = L.tileLayer(BrandenlandsInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
+        const IdlewildInsetTileLayer = L.tileLayer(IdlewildInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
 
         L.control.zoom({ position: 'topright' }).addTo(map);
 
@@ -167,61 +219,90 @@
             const { x, y } = c
         })
 
+        fullMap.addEventListener('click', e => {
+            tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 8),
+                rc.unproject([img.x, 1], 8)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(7)
+            map.setZoom(2)
+
+            BrandenlandsInsetPolygon.addTo(map)
+            IdlewildInsetPolygon.addTo(map)
+            tileLayer.addTo(map)
+
+            IdlewildInsetTileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
+
+        })
+
+        const BrandenlandsInsetPolygon = drawGeometry({
+            geometry: BrandenlandsInset.geometry,
+            color: "orange",
+            type: "polygon",
+            fit: false
+        })
+        BrandenlandsInsetPolygon.on('click', e => {
+            const { img, tiles } = BrandenlandsInset;
+
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(4)
+
+            tileLayer.remove()
+            BrandenlandsInsetTileLayer.addTo(map)
+
+            BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
+        })
+
+
+        const IdlewildInsetPolygon = drawGeometry({
+            geometry: IdlewildInset.geometry,
+            color: "orange",
+            type: "polygon",
+            fit: false
+        })
+        IdlewildInsetPolygon.on('click', e => {
+            //update tile layer
+            const { img } = IdlewildInset;
+
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(5)
+
+            tileLayer.remove()
+            IdlewildInsetTileLayer.addTo(map)
+
+            BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
+        })
+
         function unproject(arr) {
             const { lat, lng } = rc.unproject(arr)
             return [lng, lat]
         }
 
-        function drawPolygon({ coords, color = "white", dashArray = false, data }) {
-
-            const popupContent = `
-                <div class="pop">
-                    <div class="header">${data.name}</div>
-                    <div class="pop-content">
-                        ${data.descr}
-                    </div>
-                </div>
-            `
-            const unpCoords = coords.map(c => {
-                return rc.unproject([c.x, c.y])
-            })
-
-            console.log('unpCoords', unpCoords);
-
-            const polygon = L.polygon(unpCoords, {
-                color,
-                "fillOpacity": 0.5,
-                // dashArray: dashArray ? '5,10' : '',
-                "opacity": 0.5
-            });
-
-            var LeafIcon = L.Icon.extend({
-                options: {
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15],
-                    popupAnchor: [0, -10]
-                }
-            });
-            var greenIcon = new LeafIcon({
-                iconUrl: 'icons/icon.png',
-            })
-            L.marker(unpCoords[0], { icon: greenIcon })
-                .bindPopup(popupContent)
-                .addTo(map);
-
-
-            return polygon;
-        }
-
         function showInfo(data) {
             console.log('info', data);
             info.innerHTML = data
-            console.log('11', 11);
         }
 
         function drawGeometry(data) {
 
-            const { geometry, color, type } = data
+            const { geometry, color, type, fit = true } = data
             if (!geometry) return
             //leafelt bounds 
             const mapBounds = L.latLngBounds();
@@ -229,7 +310,7 @@
                 mapBounds.extend(rc.unproject([c.x, c.y]))
                 return rc.unproject([c.x, c.y])
             })
-            map.fitBounds(mapBounds);
+            fit && map.fitBounds(mapBounds);
 
 
             if (type === 'polygon') {
@@ -402,6 +483,7 @@
                     }
                 }
             });
+
             function addActive(x) {
                 /*a function to classify an item as "active":*/
                 if (!x) return false;
