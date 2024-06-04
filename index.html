@@ -168,10 +168,12 @@
 
         const IdlewildInset = {
             geometry: [
-                { x: 13248, y: 10336 },
-                { x: 13248, y: 9608 },
-                { x: 11632, y: 9608 },
-                { x: 11632, y: 10336 },
+                { x: 11494, y: 9902 },
+                { x: 11494, y: 9486 },
+                { x: 13058, y: 9486 },
+                { x: 13048, y: 10296 },
+                { x: 11718, y: 10320 },
+                { x: 11718, y: 9902 }
             ],
             img: { x: 4961, y: 3307 },
             tiles: "tiles_idlewild/{z}/{x}/{y}.png"
@@ -189,8 +191,6 @@
             maxBounds: mapBounds,
             maxBoundsViscosity: 1.0
         })
-
-
 
         var rc = new L.RasterCoords(map, [img.x, img.y])
         var mapBounds = new L.LatLngBounds(
@@ -231,19 +231,23 @@
             geometry: BrandenlandsInset.geometry,
             color: "#e2d5e9",
             type: "polygon",
-            fit: false
+            fit: false,
+            stroke: "red"
         }, false)
 
         BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
         const IdlewildInsetPolygon = drawGeometry({
             geometry: IdlewildInset.geometry,
-            color: "orange",
+            color: "#cce5d8",
             type: "polygon",
-            fit: false
+            fit: false,
+            stroke: "red"
         }, false)
 
         IdlewildInsetPolygon.on('click', switchToIdlewildInset)
         function switchToIdlewildInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
             const { img } = IdlewildInset;
             const rc = new L.RasterCoords(map, [img.x, img.y])
             const mapBounds = new L.LatLngBounds(
@@ -252,12 +256,15 @@
             );
             map.setMaxBounds(mapBounds);
             map.setMaxZoom(5)
+            map.fitBounds(mapBounds);
             tileLayer.remove()
             IdlewildInsetTileLayer.addTo(map)
             BrandenlandsInsetPolygon.remove()
             IdlewildInsetPolygon.remove()
         }
         function switchToBrandenlandsInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
             const { img, tiles } = BrandenlandsInset;
             const rc = new L.RasterCoords(map, [img.x, img.y])
             const mapBounds = new L.LatLngBounds(
@@ -266,6 +273,7 @@
             );
             map.setMaxBounds(mapBounds);
             map.setMaxZoom(4)
+            map.fitBounds(mapBounds);
             tileLayer.remove()
             BrandenlandsInsetTileLayer.addTo(map)
             BrandenlandsInsetPolygon.remove()
@@ -310,7 +318,7 @@
 
         function drawGeometry(data, removable = true) {
 
-            const { geometry, color, type, fit = true } = data
+            const { geometry, color, type, fit = true, stroke = false } = data
             if (!geometry) return
             //leafelt bounds 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -338,9 +346,14 @@
 
             if (type === 'polygon') {
                 const polygon = L.polygon(unpCoords, {
-                    color,
-                    "fillOpacity": 0.5,
-                    "opacity": 0.5
+
+                    fillColor: color,
+                    weight: stroke ? 3 : 0,
+                    opacity: 1,
+                    color: 'red',  //Outline color
+                    fillOpacity: 0.5
+
+
                 }).addTo(map);
                 geometryLayers.push({ geom: polygon, removable })
                 return polygon;
