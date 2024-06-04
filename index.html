@@ -107,7 +107,7 @@
 
         #full-map {
             position: absolute;
-            top: 10px;
+            top: 80px;
             left: 10px;
             z-index: 1000;
             width: 50px;
@@ -150,7 +150,11 @@
             x: 23622,  // original width of image 
             y: 18315   // original height of image
         }
-
+        const mapTilesNames = {
+            main: "Main",
+            BrandenlandsInset: "BrandenlandsInset",
+            IdlewildInset: "IdlewildInset"
+        }
         const BrandenlandsInset = {
             geometry: [
                 { x: 11740, y: 9956 },
@@ -209,7 +213,7 @@
             preferCanvas: true,
         })
 
-        L.control.zoom({ position: 'topright' }).addTo(map);
+        L.control.zoom({ position: 'topleft' }).addTo(map);
 
         map.setMaxBounds(mapBounds);
 
@@ -219,7 +223,51 @@
             const { x, y } = c
         })
 
-        fullMap.addEventListener('click', e => {
+        // ------------- SWITCH MAPS -----------------
+        fullMap.addEventListener('click', switchToMain)
+        const BrandenlandsInsetPolygon = drawGeometry({
+            geometry: BrandenlandsInset.geometry,
+            color: "orange",
+            type: "polygon",
+            fit: false
+        })
+        BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
+        const IdlewildInsetPolygon = drawGeometry({
+            geometry: IdlewildInset.geometry,
+            color: "orange",
+            type: "polygon",
+            fit: false
+        })
+        IdlewildInsetPolygon.on('click', switchToIdlewildInset)
+        function switchToIdlewildInset() {
+            const { img } = IdlewildInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(5)
+            tileLayer.remove()
+            IdlewildInsetTileLayer.addTo(map)
+            BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
+        }
+        function switchToBrandenlandsInset() {
+            const { img, tiles } = BrandenlandsInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(4)
+            tileLayer.remove()
+            BrandenlandsInsetTileLayer.addTo(map)
+            BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
+        }
+        function switchToMain() {
             tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
             const rc = new L.RasterCoords(map, [img.x, img.y])
             const mapBounds = new L.LatLngBounds(
@@ -236,59 +284,10 @@
 
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
-
-        })
-
-        const BrandenlandsInsetPolygon = drawGeometry({
-            geometry: BrandenlandsInset.geometry,
-            color: "orange",
-            type: "polygon",
-            fit: false
-        })
-        BrandenlandsInsetPolygon.on('click', e => {
-            const { img, tiles } = BrandenlandsInset;
-
-            const rc = new L.RasterCoords(map, [img.x, img.y])
-            const mapBounds = new L.LatLngBounds(
-                rc.unproject([1, img.y], 5),
-                rc.unproject([img.x, 1], 5)
-            );
-            map.setMaxBounds(mapBounds);
-            map.setMaxZoom(4)
-
-            tileLayer.remove()
-            BrandenlandsInsetTileLayer.addTo(map)
-
-            BrandenlandsInsetPolygon.remove()
-            IdlewildInsetPolygon.remove()
-        })
+        }
 
 
-        const IdlewildInsetPolygon = drawGeometry({
-            geometry: IdlewildInset.geometry,
-            color: "orange",
-            type: "polygon",
-            fit: false
-        })
-        IdlewildInsetPolygon.on('click', e => {
-            //update tile layer
-            const { img } = IdlewildInset;
 
-            const rc = new L.RasterCoords(map, [img.x, img.y])
-            const mapBounds = new L.LatLngBounds(
-                rc.unproject([1, img.y], 5),
-                rc.unproject([img.x, 1], 5)
-            );
-
-            map.setMaxBounds(mapBounds);
-            map.setMaxZoom(5)
-
-            tileLayer.remove()
-            IdlewildInsetTileLayer.addTo(map)
-
-            BrandenlandsInsetPolygon.remove()
-            IdlewildInsetPolygon.remove()
-        })
 
         function unproject(arr) {
             const { lat, lng } = rc.unproject(arr)
@@ -382,6 +381,16 @@
                     { x: 12140, y: 8724 },
                 ],
                 info: "Some info about the river"
+            },
+            {
+                id: 6,
+                tiles: mapTilesNames.IdlewildInset,
+                name: "Winstermill",
+                type: "point",
+                color: "red",
+                x: 4168,
+                y: 7500,
+                info: "Some info about the river"
             }
         ]
 
@@ -421,7 +430,7 @@
                         /*insert a input field that will hold the current array item's value:*/
                         b.innerHTML += `<input type='hidden' data-name="${name}" value="${id}">`;
                         /*execute a function when someone clicks on the item value (DIV element):*/
-                        b.addEventListener("click", function (e) {
+                        b.addEventListener("click", async function (e) {
 
                             const id = this.getElementsByTagName("input")[0].value;
                             /*insert the value for the autocomplete text field:*/
@@ -431,14 +440,29 @@
 
                             const result = searchData.find(s => s.id == id)
                             if (result) {
-                                const { x, y, info, type } = result
+                                const { x, y, info, type, tiles = mapTilesNames.main } = result
                                 console.log('type', type);
                                 console.log('info', info);
+
+
+                                switch (tiles) {
+                                    case mapTilesNames.BrandenlandsInset:
+                                        switchToBrandenlandsInset()
+                                        break;
+                                    case mapTilesNames.IdlewildInset:
+                                        switchToIdlewildInset()
+                                        break;
+                                    case mapTilesNames.main:
+                                        switchToMain()
+                                        break;
+                                }
+
+                                await new Promise(resolve => setTimeout(resolve, 500));
 
                                 switch (type) {
                                     case 'point':
                                         showInfo(info)
-                                        map.flyTo(rc.unproject([x, y]), 7)
+                                        map.flyTo(rc.unproject([x, y]), map.getMaxZoom())
                                         break;
                                     case 'polygon':
                                         const polygon = drawGeometry(result)
@@ -449,6 +473,7 @@
                                         showInfo(info)
                                         break;
                                 }
+
 
                             }
 
