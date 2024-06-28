@@ -14,7 +14,7 @@ try {
         name TEXT,
         info TEXT,
         geometry TEXT,
-        worldPart TEXT
+        tileLayer TEXT
     )");
 
     // Get the HTTP method and data
@@ -83,13 +83,13 @@ function getItem($pdo, $id) {
 }
 
 function createItem($pdo, $data) {
-    $stmt = $pdo->prepare("INSERT INTO items (type, name, info, geometry, worldPart) VALUES (:type, :name, :info, :geometry, :worldPart)");
+    $stmt = $pdo->prepare("INSERT INTO items (type, name, info, geometry, tileLayer) VALUES (:type, :name, :info, :geometry, :tileLayer)");
     $stmt->execute([
         ':type' => $data['type'],
         ':name' => $data['name'],
         ':info' => $data['info'],
         ':geometry' => json_encode($data['geometry']),
-        ':worldPart' => $data['worldPart']
+        ':tileLayer' => $data['tileLayer']
     ]);
     $id = $pdo->lastInsertId();
     http_response_code(201);
@@ -97,14 +97,14 @@ function createItem($pdo, $data) {
 }
 
 function updateItem($pdo, $id, $data) {
-    $stmt = $pdo->prepare("UPDATE items SET type = :type, name = :name, info = :info, geometry = :geometry, worldPart = :worldPart WHERE id = :id");
+    $stmt = $pdo->prepare("UPDATE items SET type = :type, name = :name, info = :info, geometry = :geometry, tileLayer = :tileLayer WHERE id = :id");
     $result = $stmt->execute([
         ':id' => $id,
         ':type' => $data['type'],
         ':name' => $data['name'],
         ':info' => $data['info'],
         ':geometry' => json_encode($data['geometry']),
-        ':worldPart' => $data['worldPart']
+        ':tileLayer' => $data['tileLayer']
     ]);
     if ($result) {
         echo json_encode(["message" => "Item updated successfully"]);

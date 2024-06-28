@@ -190,9 +190,9 @@
             <div id="info"></div>
 
             <div class="container-column">
-                <button id="create-pin">Create pin</button>
+                <!-- <button id="create-pin">Create pin</button>
                 <button id="create-line">Create line</button>
-                <button id="create-polygon">Create polygon</button>
+                <button id="create-polygon">Create polygon</button> -->
                 <div id="geometry-editor"></div>
             </div>
 
@@ -330,15 +330,19 @@
         //     //     coordsDiv.innerHTML = tempCoords.map(c => `{x: ${c.x.toFixed(0)}, y: ${c.y.toFixed(0)}},`).join('<br>')
         // })
 
-        createPolygon.addEventListener("click", () => {
-            // Enable polygon draw mode
-            map.pm.enableDraw('Polygon', {
-                snappable: true,
-                snapDistance: 20
-            });
-        })
+        // createPolygon.addEventListener("click", () => {
+        //     // Enable polygon draw mode
+        //     map.pm.enableDraw('Polygon', {
+        //         snappable: true,
+        //         snapDistance: 20
+        //     });
+        // })
+
         getAllItems()
 
+        map.on('pm:drawstart', function (e) {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+        });
 
         map.on('pm:create', function (e) {
 
@@ -364,9 +368,9 @@
                 description: 'Polygon description',
                 type: type,
                 geometry: coords,
-                worldPart: 'Main'
+                tileLayer: 'Main',
+                layer
             })
-
 
         });
 
@@ -393,6 +397,9 @@
         // })
 
         // ------------- SWITCH MAPS -----------------
+        const currentMap = {
+            tileLayer: "main"
+        }
         fullMap.addEventListener('click', switchToMain)
         idlewildInset.addEventListener('click', switchToIdlewildInset)
         brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
@@ -412,6 +419,8 @@
             tileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
             IdlewildInsetTileLayer.addTo(map)
+
+            currentMap.tileLayer = "idlewild"
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -428,6 +437,8 @@
             tileLayer.remove()
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.addTo(map)
+
+            currentMap.tileLayer = "brandenlands"
         }
         function switchToMain() {
             tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
@@ -445,6 +456,8 @@
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
             geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+            currentMap.tileLayer = "main"
         }
 
         function unproject(arr) {
@@ -474,8 +487,8 @@
             })
             fit && map.fitBounds(mapBounds);
 
-
-            if (type === 'point') {
+            console.log('type', type);
+            if (type === 'marker') {
                 const point = L.circle(unpCoords[0], {
                     color,
                     radius: 0.5,
@@ -484,6 +497,11 @@
                 }).addTo(map);
 
                 geometryLayers.push({ geom: point, removable })
+                // polygon.pm.enable();
+                point.on('pm:edit', updateCoords);
+                point.on('pm:dragend', updateCoords);
+                point.on('pm:rotateend', updateCoords);
+
                 return point;
             }
 
@@ -697,12 +715,19 @@
 
         // GET all items
         function getAllItems() {
-            fetch(apiUrl)
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                noCache: true
+
+            })
                 .then(response => response.json())
                 .then(data => {
                     console.log('All items:', data)
 
-                    geometryList.inerHTML = ''
+                    geometryList.innerHTML = ''
                     geometryList.appendChild(generateGeometryList(data))
 
                 })
@@ -716,12 +741,10 @@
             // ':name' => $data['name'],
             // ':info' => $data['info'],
             // ':geometry' => json_encode($data['geometry']),
-            // ':worldPart' => $data['worldPart']
+            // ':tileLayer' => $data['tileLayer']
 
             const method = item.id && item.id > 0 ? 'PUT' : 'POST'
-            console.log('item', item);
-            
-            fetch(apiUrl, {
+            return fetch(apiUrl, {
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -729,8 +752,6 @@
                 body: JSON.stringify(item),
             })
                 .then(response => response.json())
-                .then(data => console.log('Created item:', data))
-                .catch(error => console.error('Error:', error));
         }
 
 
@@ -740,7 +761,8 @@
             name,
             info,
             geometry,
-            worldPart
+            tileLayer,
+            layer
         }) {
             const container = document.createElement("div")
             container.className = "container-column"
@@ -755,17 +777,25 @@
 
             const saveButton = document.createElement("button")
             saveButton.innerText = "Save"
-            saveButton.addEventListener("click", () => {
+            saveButton.addEventListener("click", async () => {
                 const item = {
                     id,
                     name: nameInput.value,
                     info: infoArea.value,
                     type,
                     geometry: JSON.parse(geometryInput.value),
-                    worldPart: ""
+                    tileLayer: currentMap.tileLayer
                 }
 
-                createItem(item)
+                await createItem(item)
+
+                //remove old geomerty
+                layer && layer.remove()
+                geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+                editorDiv.innerHTML = ''
+
+                getAllItems()//refetch the new data
             })
 
             const geometryInput = document.createElement("textarea")
@@ -787,7 +817,7 @@
 
             const container = document.createElement("div")
             data.forEach(d => {
-                const { id, name, info, type, geometry, worldPart } = d
+                const { id, name, info, type, geometry, tileLayer } = d
                 const item = document.createElement("div")
                 item.className = "list-item"
                 item.innerHTML = `${d.id}.  ${d.name}`
@@ -799,7 +829,7 @@
                         info,
                         type,
                         geometry,
-                        worldPart,
+                        tileLayer,
                     })
 
                     drawGeometry({
@@ -807,8 +837,6 @@
                             geometryInput.value = JSON.stringify(geometry)
                         }
                     })
-
-
 
                 })
                 container.appendChild(item)
