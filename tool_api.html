@@ -718,8 +718,11 @@
             // ':geometry' => json_encode($data['geometry']),
             // ':worldPart' => $data['worldPart']
 
+            const method = item.id && item.id > 0 ? 'PUT' : 'POST'
+            console.log('item', item);
+            
             fetch(apiUrl, {
-                method: 'POST',
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -754,12 +757,14 @@
             saveButton.innerText = "Save"
             saveButton.addEventListener("click", () => {
                 const item = {
+                    id,
                     name: nameInput.value,
                     info: infoArea.value,
                     type,
                     geometry: JSON.parse(geometryInput.value),
                     worldPart: ""
                 }
+
                 createItem(item)
             })
 

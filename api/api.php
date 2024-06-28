@@ -34,8 +34,8 @@ try {
             createItem($pdo, $data);
             break;
         case 'PUT':
-            if (isset($_GET['id'])) {
-                updateItem($pdo, $_GET['id'], $data);
+            if (isset($data['id'])) {
+                updateItem($pdo, $data['id'], $data);
             } else {
                 http_response_code(400);
                 echo json_encode(["error" => "ID is required for update"]);
