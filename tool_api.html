@@ -237,6 +237,11 @@
             BrandenlandsInset: "BrandenlandsInset",
             IdlewildInset: "IdlewildInset"
         }
+
+        const currentMap = {
+            tileLayer: mapTilesNames.main
+        }
+
         const BrandenlandsInset = {
             geometry: [
                 { x: 11718, y: 9902 },
@@ -291,8 +296,8 @@
         map.on('pm:create', ({
             workingLayer
         }) => {
-            self_drawn = map.pm.getGeomanDrawLayers(true)
-            console.log(self_drawn.toGeoJSON())
+            // self_drawn = map.pm.getGeomanDrawLayers(true)
+            map.pm.disableDraw()
         });
 
         var rc = new L.RasterCoords(map, [img.x, img.y])
@@ -397,9 +402,6 @@
         // })
 
         // ------------- SWITCH MAPS -----------------
-        const currentMap = {
-            tileLayer: "main"
-        }
         fullMap.addEventListener('click', switchToMain)
         idlewildInset.addEventListener('click', switchToIdlewildInset)
         brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
@@ -420,7 +422,7 @@
             BrandenlandsInsetTileLayer.remove()
             IdlewildInsetTileLayer.addTo(map)
 
-            currentMap.tileLayer = "idlewild"
+            currentMap.tileLayer = mapTilesNames.IdlewildInset
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -438,9 +440,10 @@
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.addTo(map)
 
-            currentMap.tileLayer = "brandenlands"
+            currentMap.tileLayer = mapTilesNames.BrandenlandsInset
         }
         function switchToMain() {
+
             tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
             const rc = new L.RasterCoords(map, [img.x, img.y])
             const mapBounds = new L.LatLngBounds(
@@ -457,7 +460,8 @@
             BrandenlandsInsetTileLayer.remove()
             geometryLayers.forEach(l => l.removable && l.geom.remove())
 
-            currentMap.tileLayer = "main"
+            currentMap.tileLayer = mapTilesNames.main
+
         }
 
         function unproject(arr) {
@@ -821,7 +825,37 @@
                 const item = document.createElement("div")
                 item.className = "list-item"
                 item.innerHTML = `${d.id}.  ${d.name}`
-                item.addEventListener("click", () => {
+                item.addEventListener("click", async () => {
+
+                    console.log('tileLayer', tileLayer);
+                    console.log('tileLayer', currentMap.tileLayer);
+
+                    if (tileLayer !== currentMap.tileLayer) {
+
+                        switch (tileLayer) {
+                            case mapTilesNames.BrandenlandsInset:
+                                switchToBrandenlandsInset()
+                                break;
+                            case mapTilesNames.IdlewildInset:
+                                switchToIdlewildInset()
+                                break;
+                            case mapTilesNames.main:
+                                switchToMain()
+                                break;
+                        }
+
+                        await new Promise(resolve => {
+                            map.once('moveend', () => {
+                                resolve()
+                            })
+                            setTimeout(() => {
+                                resolve()
+                            }, 2000)
+                        })
+
+                    }
+
+
 
                     const { geometryInput } = generateEditor({
                         id,
