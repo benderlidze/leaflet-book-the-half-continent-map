@@ -407,6 +407,7 @@
 
         function switchToIdlewildInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
 
             const { img } = IdlewildInset;
             const rc = new L.RasterCoords(map, [img.x, img.y])
@@ -425,6 +426,7 @@
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
 
             const { img, tiles } = BrandenlandsInset;
             const rc = new L.RasterCoords(map, [img.x, img.y])
@@ -458,6 +460,7 @@
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
             geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
 
             currentMap.tileLayer = mapTilesNames.main
 
@@ -482,6 +485,7 @@
             if (!geometry) return
             //leafelt bounds 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
 
             const mapBounds = L.latLngBounds();
             const unpCoords = geometry.map(c => {
@@ -615,7 +619,7 @@
                             if (result) {
 
                                 inp.value = ''
-                                 
+
                                 const { x, y, color, info, geometry, type, tileLayer = mapTilesNames.main } = result
                                 console.log('type', type);
                                 console.log('info', info);
@@ -666,7 +670,6 @@
                                         geometryInput.value = JSON.stringify(geometry)
                                     }
                                 })
-
 
                             }
 
@@ -796,7 +799,6 @@
             tileLayer,
             layer,
             color
-
         }) {
             let selectedColor = color
             const container = document.createElement("div")
@@ -829,6 +831,7 @@
                 //remove old geomerty
                 layer && layer.remove()
                 geometryLayers.forEach(l => l.removable && l.geom.remove())
+                geometryLayers.length = 0
 
                 editorDiv.innerHTML = ''
 
@@ -876,10 +879,13 @@
                             .then(data => {
                                 console.log('data', data);
                                 getAllItems()
+
+                                geometryLayers.length = 0
                             })
                     },
                     cancel: () => {
                         console.log('cancel');
+                        geometryLayers.length = 0
                     }
                 })
             })
@@ -903,14 +909,20 @@
                 button.style.border = "1px solid black"
                 button.style.cursor = "pointer"
                 button.addEventListener("click", () => {
-                    console.log('color', color);
                     console.log('_color', _color);
+                    console.log('layer', layer);
 
-                    drawGeometry({
-                        geometry, type, color: _color, editCallback: (geometry) => {
-                            geometryInput.value = JSON.stringify(geometry)
-                        }
-                    })
+                    layer && layer.setStyle({ color: _color })
+
+                    const editableLayer = geometryLayers[0]
+                    editableLayer && editableLayer.geom.setStyle({ color: _color, fillColor: _color })
+
+
+                    // drawGeometry({
+                    //     geometry, type, color: _color, editCallback: (geometry) => {
+                    //         geometryInput.value = JSON.stringify(geometry)
+                    //     }
+                    // })
                     selectedColor = _color
                 })
                 colorContainer.appendChild(button)
@@ -932,68 +944,68 @@
         }
 
 
-        function generateGeometryList(data) {
+        // function generateGeometryList(data) {
 
-            const container = document.createElement("div")
-            data.forEach(d => {
+        //     const container = document.createElement("div")
+        //     data.forEach(d => {
 
-                const { id, name, info, type, geometry, tileLayer, color } = d
-                const item = document.createElement("div")
-                item.className = "list-item"
-                item.innerHTML = `${d.id}.  ${d.name}`
-                item.addEventListener("click", async () => {
+        //         const { id, name, info, type, geometry, tileLayer, color } = d
+        //         const item = document.createElement("div")
+        //         item.className = "list-item"
+        //         item.innerHTML = `${d.id}.  ${d.name}`
+        //         item.addEventListener("click", async () => {
 
-                    console.log('tileLayer', tileLayer);
-                    console.log('tileLayer', currentMap.tileLayer);
+        //             console.log('tileLayer', tileLayer);
+        //             console.log('tileLayer', currentMap.tileLayer);
 
-                    if (tileLayer !== currentMap.tileLayer) {
+        //             if (tileLayer !== currentMap.tileLayer) {
 
-                        switch (tileLayer) {
-                            case mapTilesNames.BrandenlandsInset:
-                                switchToBrandenlandsInset()
-                                break;
-                            case mapTilesNames.IdlewildInset:
-                                switchToIdlewildInset()
-                                break;
-                            case mapTilesNames.main:
-                                switchToMain()
-                                break;
-                        }
+        //                 switch (tileLayer) {
+        //                     case mapTilesNames.BrandenlandsInset:
+        //                         switchToBrandenlandsInset()
+        //                         break;
+        //                     case mapTilesNames.IdlewildInset:
+        //                         switchToIdlewildInset()
+        //                         break;
+        //                     case mapTilesNames.main:
+        //                         switchToMain()
+        //                         break;
+        //                 }
 
-                        await new Promise(resolve => {
-                            map.once('moveend', () => {
-                                resolve()
-                            })
-                            setTimeout(() => {
-                                resolve()
-                            }, 2000)
-                        })
+        //                 await new Promise(resolve => {
+        //                     map.once('moveend', () => {
+        //                         resolve()
+        //                     })
+        //                     setTimeout(() => {
+        //                         resolve()
+        //                     }, 2000)
+        //                 })
 
-                    }
+        //             }
 
-                    const { geometryInput } = generateEditor({
-                        id,
-                        name,
-                        info,
-                        type,
-                        geometry,
-                        tileLayer,
-                        color
-                    })
+        //             const { geometryInput } = generateEditor({
+        //                 id,
+        //                 name,
+        //                 info,
+        //                 type,
+        //                 geometry,
+        //                 tileLayer,
+        //                 color
+        //             })
 
-                    drawGeometry({
-                        color, geometry, type, editCallback: (geometry) => {
-                            geometryInput.value = JSON.stringify(geometry)
-                        }
-                    })
+        //             drawGeometry({
+        //                 color, geometry, type, editCallback: (geometry) => {
+        //                     geometryInput.value = JSON.stringify(geometry)
+        //                 }
+        //             })
 
-                })
-                container.appendChild(item)
-            })
+        //         })
+        //         container.appendChild(item)
+        //     })
 
-            return container
+        //     return container
 
-        }
+        // }
 
 
         function modalAlert({ del, cancel }) {
