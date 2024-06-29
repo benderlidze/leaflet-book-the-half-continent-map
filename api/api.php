@@ -1,9 +1,17 @@
 <?php
-header("Content-Type: application/json");
-//disable cors
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+    header('Access-Control-Allow-Headers: token, Content-Type');
+    header('Access-Control-Max-Age: 1728000');
+    header('Content-Length: 0');
+    header('Content-Type: text/plain');
+    die();
+}
+
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
 
 try {
     // Database connection
@@ -35,22 +43,32 @@ try {
             }
             break;
         case 'POST':
-            createItem($pdo, $data);
-            break;
-        case 'PUT':
-            if (isset($data['id'])) {
-                updateItem($pdo, $data['id'], $data);
+            if (isset($data['action'])) {
+                switch ($data['action']) {
+                    case 'UPDATE':
+                        if (isset($data['id'])) {
+                            updateItem($pdo, $data['id'], $data);
+                        } else {
+                            http_response_code(400);
+                            echo json_encode(["error" => "ID is required for update"]);
+                        }
+                        break;
+                    case 'DELETE':
+                        if (isset($data['id'])) {
+                            deleteItem($pdo, $data['id']);
+                        } else {
+                            http_response_code(400);
+                            echo json_encode(["error" => "ID is required for delete"]);
+                        }
+                        break;
+                    case 'INSERT':
+                        createItem($pdo, $data);
+                        break;
+                    default:
+                        break;
+                }
             } else {
-                http_response_code(400);
-                echo json_encode(["error" => "ID is required for update"]);
-            }
-            break;
-        case 'DELETE':
-            if (isset($_GET['id'])) {
-                deleteItem($pdo, $_GET['id']);
-            } else {
-                http_response_code(400);
-                echo json_encode(["error" => "ID is required for delete"]);
+                createItem($pdo, $data);
             }
             break;
         default:

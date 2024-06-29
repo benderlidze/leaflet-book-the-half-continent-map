@@ -208,7 +208,8 @@
     </div>
 
     <script>
-        const apiUrl = 'api/api.php';
+        const apiUrl = 'https://serg.one/tool_api/api.php';
+        //const apiUrl = 'api/api.php';
 
         const geometryList = document.getElementById("geometry-list")
         const editorDiv = document.getElementById("geometry-editor")
@@ -747,15 +748,16 @@
             // ':geometry' => json_encode($data['geometry']),
             // ':tileLayer' => $data['tileLayer']
 
-            const method = item.id && item.id > 0 ? 'PUT' : 'POST'
+            const action = item.id && item.id > 0 ? 'UPDATE' : 'INSERT'
             return fetch(apiUrl, {
-                method: method,
+                method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(item),
+                body: JSON.stringify({ ...item, action }),
             })
                 .then(response => response.json())
+
         }
 
 
