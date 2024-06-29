@@ -479,6 +479,7 @@
 
         function drawGeometry(data, removable = true) {
 
+            console.log('data', data);
             const { geometry, color, type, fit = true, stroke = false, editCallback } = data
             if (!geometry) return
             //leafelt bounds 
@@ -493,6 +494,9 @@
             fit && map.fitBounds(mapBounds);
 
             console.log('type', type);
+            console.log('color', color);
+
+
             if (type === 'marker') {
                 const point = L.circle(unpCoords[0], {
                     color,
@@ -780,8 +784,11 @@
             info,
             geometry,
             tileLayer,
-            layer
+            layer,
+            color
+
         }) {
+            let selectedColor = color
             const container = document.createElement("div")
             container.className = "container-column"
 
@@ -802,7 +809,8 @@
                     info: infoArea.value,
                     type,
                     geometry: JSON.parse(geometryInput.value),
-                    tileLayer: currentMap.tileLayer
+                    tileLayer: currentMap.tileLayer,
+                    color: selectedColor
                 }
 
                 await createItem(item)
@@ -816,12 +824,38 @@
                 getAllItems()//refetch the new data
             })
 
+
+            const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'black']
+            const colorContainer = document.createElement("div")
+            colorContainer.style = "display: flex; gap: 2px; flex-direction: row;"
+            colors.forEach(_color => {
+                const button = document.createElement("div")
+                button.style.backgroundColor = _color
+                button.style.width = "20px"
+                button.style.height = "20px"
+                button.style.border = "1px solid black"
+                button.style.cursor = "pointer"
+                button.addEventListener("click", () => {
+                    console.log('color', color);
+                    console.log('_color', _color);
+
+                    drawGeometry({
+                        geometry, type, color: _color, editCallback: (geometry) => {
+                            geometryInput.value = JSON.stringify(geometry)
+                        }
+                    })
+                    selectedColor = _color
+                })
+                colorContainer.appendChild(button)
+            })
+
             const geometryInput = document.createElement("textarea")
             geometryInput.value = JSON.stringify(geometry)
 
             container.appendChild(nameInput)
             container.appendChild(infoArea)
             container.appendChild(geometryInput)
+            container.appendChild(colorContainer)
             container.appendChild(saveButton)
 
             editorDiv.innerHTML = ''
@@ -835,7 +869,8 @@
 
             const container = document.createElement("div")
             data.forEach(d => {
-                const { id, name, info, type, geometry, tileLayer } = d
+
+                const { id, name, info, type, geometry, tileLayer, color } = d
                 const item = document.createElement("div")
                 item.className = "list-item"
                 item.innerHTML = `${d.id}.  ${d.name}`
@@ -843,8 +878,6 @@
 
                     console.log('tileLayer', tileLayer);
                     console.log('tileLayer', currentMap.tileLayer);
-
-
 
                     if (tileLayer !== currentMap.tileLayer) {
 
@@ -878,10 +911,11 @@
                         type,
                         geometry,
                         tileLayer,
+                        color
                     })
 
                     drawGeometry({
-                        geometry, type, editCallback: (geometry) => {
+                        color, geometry, type, editCallback: (geometry) => {
                             geometryInput.value = JSON.stringify(geometry)
                         }
                     })

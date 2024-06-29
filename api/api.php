@@ -26,7 +26,8 @@ try {
         name TEXT,
         info TEXT,
         geometry TEXT,
-        tileLayer TEXT
+        tileLayer TEXT,
+        color TEXT
     )");
 
     // Get the HTTP method and data
@@ -105,13 +106,14 @@ function getItem($pdo, $id) {
 }
 
 function createItem($pdo, $data) {
-    $stmt = $pdo->prepare("INSERT INTO items (type, name, info, geometry, tileLayer) VALUES (:type, :name, :info, :geometry, :tileLayer)");
+    $stmt = $pdo->prepare("INSERT INTO items (type, name, info, geometry, tileLayer, color) VALUES (:type, :name, :info, :geometry, :tileLayer, :color)");
     $stmt->execute([
         ':type' => $data['type'],
         ':name' => $data['name'],
         ':info' => $data['info'],
         ':geometry' => json_encode($data['geometry']),
-        ':tileLayer' => $data['tileLayer']
+        ':tileLayer' => $data['tileLayer'],
+        ':color' => $data['color']
     ]);
     $id = $pdo->lastInsertId();
     http_response_code(201);
@@ -119,14 +121,15 @@ function createItem($pdo, $data) {
 }
 
 function updateItem($pdo, $id, $data) {
-    $stmt = $pdo->prepare("UPDATE items SET type = :type, name = :name, info = :info, geometry = :geometry, tileLayer = :tileLayer WHERE id = :id");
+    $stmt = $pdo->prepare("UPDATE items SET type = :type, name = :name, info = :info, geometry = :geometry, tileLayer = :tileLayer, color = :color WHERE id = :id");
     $result = $stmt->execute([
         ':id' => $id,
         ':type' => $data['type'],
         ':name' => $data['name'],
         ':info' => $data['info'],
         ':geometry' => json_encode($data['geometry']),
-        ':tileLayer' => $data['tileLayer']
+        ':tileLayer' => $data['tileLayer'],
+        ':color' => $data['color']
     ]);
     if ($result) {
         echo json_encode(["message" => "Item updated successfully"]);
