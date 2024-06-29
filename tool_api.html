@@ -366,7 +366,6 @@
                 const { x, y } = c
                 return { x: Math.abs(y), y: Math.abs(x) }
             })
-            console.log('coords', coords);
 
             const editor = generateEditor({
                 name: type,
@@ -377,6 +376,7 @@
                 layer
             })
 
+            console.log('coords!!!!!!!!!!!!!!!! ADD geometry to >????', coords);
         });
 
 
@@ -830,6 +830,8 @@
                     console.log('tileLayer', tileLayer);
                     console.log('tileLayer', currentMap.tileLayer);
 
+
+
                     if (tileLayer !== currentMap.tileLayer) {
 
                         switch (tileLayer) {
@@ -854,8 +856,6 @@
                         })
 
                     }
-
-
 
                     const { geometryInput } = generateEditor({
                         id,
