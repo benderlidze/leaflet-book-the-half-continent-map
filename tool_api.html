@@ -569,13 +569,6 @@
             return coords
         }
 
-        fetch(apiUrl)
-            .then(res => res.json())
-            .then(data => {
-                console.log('data', data);
-                autocomplete(document.getElementById("myInput"), data);
-            })
-
         function autocomplete(inp, arr) {
             /*the autocomplete function takes two arguments,
             the text field element and an array of possible autocompleted values:*/
@@ -620,7 +613,10 @@
 
                             const result = arr.find(s => s.id == id)
                             if (result) {
-                                const { x, y, info, type, tileLayer = mapTilesNames.main } = result
+
+                                inp.value = ''
+                                 
+                                const { x, y, color, info, geometry, type, tileLayer = mapTilesNames.main } = result
                                 console.log('type', type);
                                 console.log('info', info);
                                 console.log('result', result);
@@ -649,22 +645,29 @@
                                 }
 
                                 //await new Promise(resolve => setTimeout(resolve, 500));
+                                // switch (type) {
+                                //     case 'marker':
+                                //         showInfo(info)
+                                //         drawGeometry(result)
+                                //         break;
+                                //     case 'polygon':
+                                //         const polygon = drawGeometry(result)
+                                //         showInfo(info)
+                                //         break;
+                                //     case 'line':
+                                //         const line = drawGeometry(result)
+                                //         showInfo(info)
+                                //         break;
+                                // }
+
+                                const { geometryInput } = generateEditor(result)
+                                drawGeometry({
+                                    color, geometry, type, editCallback: (geometry) => {
+                                        geometryInput.value = JSON.stringify(geometry)
+                                    }
+                                })
 
 
-                                switch (type) {
-                                    case 'marker':
-                                        showInfo(info)
-                                        drawGeometry(result)
-                                        break;
-                                    case 'polygon':
-                                        const polygon = drawGeometry(result)
-                                        showInfo(info)
-                                        break;
-                                    case 'line':
-                                        const line = drawGeometry(result)
-                                        showInfo(info)
-                                        break;
-                                }
                             }
 
                             closeAllLists();
@@ -732,6 +735,16 @@
         }
 
 
+        // function rebuildAutocomplete() {
+        //     fetch(apiUrl)
+        //         .then(res => res.json())
+        //         .then(data => {
+        //             console.log('data', data);
+        //             autocomplete(document.getElementById("myInput"), data);
+        //         })
+        // }
+        // rebuildAutocomplete()
+
         // GET all items
         function getAllItems() {
             fetch(apiUrl, {
@@ -746,8 +759,7 @@
                 .then(data => {
                     console.log('All items:', data)
 
-                    geometryList.innerHTML = ''
-                    geometryList.appendChild(generateGeometryList(data))
+                    autocomplete(document.getElementById("myInput"), data);
 
                 })
                 .catch(error => console.error('Error:', error));
