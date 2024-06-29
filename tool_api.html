@@ -567,7 +567,7 @@
             return coords
         }
 
-        fetch("data.json")
+        fetch(apiUrl)
             .then(res => res.json())
             .then(data => {
                 console.log('data', data);
@@ -618,28 +618,40 @@
 
                             const result = arr.find(s => s.id == id)
                             if (result) {
-                                const { x, y, info, type, tiles = mapTilesNames.main } = result
+                                const { x, y, info, type, tileLayer = mapTilesNames.main } = result
                                 console.log('type', type);
                                 console.log('info', info);
+                                console.log('result', result);
 
-                                switch (tiles) {
-                                    case mapTilesNames.BrandenlandsInset:
-                                        switchToBrandenlandsInset()
-                                        break;
-                                    case mapTilesNames.IdlewildInset:
-                                        switchToIdlewildInset()
-                                        break;
-                                    case mapTilesNames.main:
-                                        switchToMain()
-                                        break;
+                                if (tileLayer !== currentMap.tileLayer) {
+                                    switch (tileLayer) {
+                                        case mapTilesNames.BrandenlandsInset:
+                                            switchToBrandenlandsInset()
+                                            break;
+                                        case mapTilesNames.IdlewildInset:
+                                            switchToIdlewildInset()
+                                            break;
+                                        case mapTilesNames.main:
+                                            switchToMain()
+                                            break;
+                                    }
+
+                                    await new Promise(resolve => {
+                                        map.once('moveend', () => {
+                                            resolve()
+                                        })
+                                        setTimeout(() => {
+                                            resolve()
+                                        }, 2000)
+                                    })
                                 }
 
-                                await new Promise(resolve => setTimeout(resolve, 500));
+                                //await new Promise(resolve => setTimeout(resolve, 500));
+
 
                                 switch (type) {
-                                    case 'point':
+                                    case 'marker':
                                         showInfo(info)
-                                        // map.flyTo(rc.unproject([x, y]), map.getMaxZoom())
                                         drawGeometry(result)
                                         break;
                                     case 'polygon':
