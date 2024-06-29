@@ -292,13 +292,6 @@
             cutPolygon: false
         });
 
-        map.on('pm:create', ({
-            workingLayer
-        }) => {
-            // self_drawn = map.pm.getGeomanDrawLayers(true)
-            map.pm.disableDraw()
-        });
-
         var rc = new L.RasterCoords(map, [img.x, img.y])
         var mapBounds = new L.LatLngBounds(
             rc.unproject([1, img.y], 8),
@@ -366,7 +359,7 @@
                 return { x: Math.abs(y), y: Math.abs(x) }
             })
 
-            const editor = generateEditor({
+            const { geometryInput } = generateEditor({
                 name: type,
                 description: 'Polygon description',
                 type: type,
@@ -374,6 +367,14 @@
                 tileLayer: 'Main',
                 layer
             })
+
+            drawGeometry({
+                color: "red", geometry: coords, type, editCallback: (geometry) => {
+                    geometryInput.value = JSON.stringify(geometry)
+                }
+            })
+
+            layer.remove()
 
             console.log('coords!!!!!!!!!!!!!!!! ADD geometry to >????', coords);
         });
@@ -971,7 +972,6 @@
         //                         switchToMain()
         //                         break;
         //                 }
-
         //                 await new Promise(resolve => {
         //                     map.once('moveend', () => {
         //                         resolve()
@@ -980,9 +980,7 @@
         //                         resolve()
         //                     }, 2000)
         //                 })
-
         //             }
-
         //             const { geometryInput } = generateEditor({
         //                 id,
         //                 name,
@@ -992,19 +990,15 @@
         //                 tileLayer,
         //                 color
         //             })
-
         //             drawGeometry({
         //                 color, geometry, type, editCallback: (geometry) => {
         //                     geometryInput.value = JSON.stringify(geometry)
         //                 }
         //             })
-
         //         })
         //         container.appendChild(item)
         //     })
-
         //     return container
-
         // }
 
 
