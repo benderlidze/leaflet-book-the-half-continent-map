@@ -207,6 +207,8 @@
     </div>
 
     <script>
+
+
         const apiUrl = 'https://serg.one/tool_api/api.php';
         //const apiUrl = 'api/api.php';
 
@@ -239,6 +241,8 @@
         }
 
         const currentMap = {
+            type: "",
+            data: [],
             tileLayer: mapTilesNames.main
         }
 
@@ -404,6 +408,8 @@
             IdlewildInsetTileLayer.addTo(map)
 
             currentMap.tileLayer = mapTilesNames.IdlewildInset
+
+            drawAllItems()
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -423,6 +429,8 @@
             BrandenlandsInsetTileLayer.addTo(map)
 
             currentMap.tileLayer = mapTilesNames.BrandenlandsInset
+
+            drawAllItems()
         }
         function switchToMain() {
 
@@ -445,6 +453,7 @@
 
             currentMap.tileLayer = mapTilesNames.main
 
+            drawAllItems()
         }
 
         function unproject(arr) {
@@ -733,78 +742,89 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log('All items:', data)
-                    autocomplete(document.getElementById("myInput"), data);
+                    currentMap.data = data
 
-                    drawAllItems({ data })
+                    autocomplete(document.getElementById("myInput"), data);
+                    drawAllItems()
                 })
         }
 
-        function drawAllItems({ data, type }) {
+        function drawAllItems() {
 
-            const geom = type && type !== ''
-                ? data.filter(d => d.type === type)
-                : data
-
-
-            geom.forEach(d => {
-                const { id, name, info, type, geometry, tileLayer, color } = d
-
-                const unpCoords = geometry.map(c => {
-                    return rc.unproject([c.x, c.y])
+            currentMap
+                .data
+                .filter(geom => {
+                    if (currentMap.type && currentMap.type !== "") geom.type === currentMap.type
+                    return true
                 })
+                .filter(tileLayer => tileLayer.tileLayer === currentMap.tileLayer)
+                .forEach(d => {
+                    const { id, name, info, type, geometry, tileLayer, color } = d
 
-                if (type === 'marker') {
-
-                    const point = L.circle(unpCoords[0], {
-                        color,
-                        radius: 0.5,
-                        "fillOpacity": 0.5,
-                        "opacity": 0.5,
-                        pmIgnore: true
-                    }).addTo(map);
-
-                    point.addEventListener("click", () => {
-                        const { geometryInput } = generateEditor(d)
-                        drawGeometry({
-                            color, geometry, type, editCallback: (geometry) => {
-                                geometryInput.value = JSON.stringify(geometry)
-                            }
-                        })
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
                     })
-                    geometryLayers.push({ geom: point, removable: true })
-                }
 
-                if (type === 'polygon') {
-                    const polygon = L.polygon(unpCoords, {
-                        fillColor: color,
-                        weight: 2,
-                        opacity: 1,
-                        color: color,  //Outline color
-                        fillOpacity: 0.5,
-                        pmIgnore: true
-                    }).addTo(map);
-                    polygon.addEventListener("click", () => {
-                        const { geometryInput } = generateEditor(d)
-                        drawGeometry({
-                            color, geometry, type, editCallback: (geometry) => {
-                                geometryInput.value = JSON.stringify(geometry)
-                            }
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            const { geometryInput } = generateEditor(d)
+                            drawGeometry({
+                                color, geometry, type, editCallback: (geometry) => {
+                                    geometryInput.value = JSON.stringify(geometry)
+                                }
+                            })
                         })
-                    })
-                    geometryLayers.push({ geom: polygon, removable: true })
-                }
+                        geometryLayers.push({ geom: point, removable: true })
+                    }
 
-                if (type === 'line') {
-                    const line = L.polyline(unpCoords, {
-                        color,
-                        "fillOpacity": 1,
-                        "opacity": 1,
-                        "weight": 5,
-                        pmIgnore: true
-                    }).addTo(map);
-                    geometryLayers.push({ geom: line, removable: true })
-                }
-            })
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            fillColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            const { geometryInput } = generateEditor(d)
+                            drawGeometry({
+                                color, geometry, type, editCallback: (geometry) => {
+                                    geometryInput.value = JSON.stringify(geometry)
+                                }
+                            })
+                        })
+                        geometryLayers.push({ geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            const { geometryInput } = generateEditor(d)
+                            drawGeometry({
+                                color, geometry, type, editCallback: (geometry) => {
+                                    geometryInput.value = JSON.stringify(geometry)
+                                }
+                            })
+                        })
+                        geometryLayers.push({ geom: line, removable: true })
+                    }
+                })
 
 
         }
@@ -877,6 +897,8 @@
                 editorDiv.innerHTML = ''
 
                 getAllItems()//refetch the new data
+
+                map.pm.disableGlobalEditMode()
             })
 
             const cancelButton = document.createElement("button")
@@ -889,6 +911,8 @@
                 geometryLayers.forEach(l => l.removable && l.geom.remove())
 
                 getAllItems()
+
+                map.pm.disableGlobalEditMode()
             })
 
             const deleteButton = document.createElement("button")
@@ -924,6 +948,8 @@
                                 getAllItems()
 
                                 geometryLayers.length = 0
+
+                                map.pm.disableGlobalEditMode()
                             })
                     },
                     cancel: () => {
