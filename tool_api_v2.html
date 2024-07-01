@@ -241,7 +241,7 @@
         }
 
         const currentMap = {
-            type: "",
+            type: "marker",
             data: [],
             tileLayer: mapTilesNames.main
         }
@@ -1056,6 +1056,7 @@
 
 
         buildTypeSelectors()
+
         function buildTypeSelectors() {
 
             const types = ['marker', 'polygon', 'line']
@@ -1066,12 +1067,11 @@
                 input.type = "radio"
                 input.name = "type"
                 input.value = type
+                input.checked = type === 'marker'
                 input.id = type
                 input.addEventListener("change", () => {
-
                     currentMap.type = type
                     drawAllItems()
-
                 })
 
                 const label = document.createElement("label")
