@@ -382,6 +382,8 @@
             layer.remove()
 
             console.log('coords!!!!!!!!!!!!!!!! ADD geometry to >????', coords);
+
+            map.pm.disableGlobalEditMode()
         });
 
 
@@ -751,14 +753,22 @@
 
         function drawAllItems() {
 
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
             currentMap
                 .data
                 .filter(geom => {
-                    if (currentMap.type && currentMap.type !== "") geom.type === currentMap.type
-                    return true
+                    if (currentMap.type && currentMap.type !== "") {
+                        return geom.type === currentMap.type
+                    }
+                    else {
+                        return true
+                    }
                 })
                 .filter(tileLayer => tileLayer.tileLayer === currentMap.tileLayer)
                 .forEach(d => {
+
+                    console.log('d', d);
                     const { id, name, info, type, geometry, tileLayer, color } = d
 
                     const unpCoords = geometry.map(c => {
@@ -825,8 +835,6 @@
                         geometryLayers.push({ geom: line, removable: true })
                     }
                 })
-
-
         }
 
         // POST a new item
@@ -981,17 +989,12 @@
                     console.log('_color', _color);
                     console.log('layer', layer);
 
-                    layer && layer.setStyle({ color: _color })
+                    //layer && layer.setStyle({ color: _color })
 
                     const editableLayer = geometryLayers[0]
                     editableLayer && editableLayer.geom.setStyle({ color: _color, fillColor: _color })
 
 
-                    // drawGeometry({
-                    //     geometry, type, color: _color, editCallback: (geometry) => {
-                    //         geometryInput.value = JSON.stringify(geometry)
-                    //     }
-                    // })
                     selectedColor = _color
                 })
                 colorContainer.appendChild(button)
@@ -1011,64 +1014,6 @@
 
             return { editorDiv, container, geometryInput }
         }
-
-
-        // function generateGeometryList(data) {
-
-        //     const container = document.createElement("div")
-        //     data.forEach(d => {
-
-        //         const { id, name, info, type, geometry, tileLayer, color } = d
-        //         const item = document.createElement("div")
-        //         item.className = "list-item"
-        //         item.innerHTML = `${d.id}.  ${d.name}`
-        //         item.addEventListener("click", async () => {
-
-        //             console.log('tileLayer', tileLayer);
-        //             console.log('tileLayer', currentMap.tileLayer);
-
-        //             if (tileLayer !== currentMap.tileLayer) {
-
-        //                 switch (tileLayer) {
-        //                     case mapTilesNames.BrandenlandsInset:
-        //                         switchToBrandenlandsInset()
-        //                         break;
-        //                     case mapTilesNames.IdlewildInset:
-        //                         switchToIdlewildInset()
-        //                         break;
-        //                     case mapTilesNames.main:
-        //                         switchToMain()
-        //                         break;
-        //                 }
-        //                 await new Promise(resolve => {
-        //                     map.once('moveend', () => {
-        //                         resolve()
-        //                     })
-        //                     setTimeout(() => {
-        //                         resolve()
-        //                     }, 2000)
-        //                 })
-        //             }
-        //             const { geometryInput } = generateEditor({
-        //                 id,
-        //                 name,
-        //                 info,
-        //                 type,
-        //                 geometry,
-        //                 tileLayer,
-        //                 color
-        //             })
-        //             drawGeometry({
-        //                 color, geometry, type, editCallback: (geometry) => {
-        //                     geometryInput.value = JSON.stringify(geometry)
-        //                 }
-        //             })
-        //         })
-        //         container.appendChild(item)
-        //     })
-        //     return container
-        // }
-
 
         function modalAlert({ del, cancel }) {
             const modal = document.createElement("div")
@@ -1124,7 +1069,8 @@
                 input.id = type
                 input.addEventListener("change", () => {
 
-                    refetchData(type)
+                    currentMap.type = type
+                    drawAllItems()
 
                 })
 
