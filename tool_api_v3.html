@@ -240,7 +240,7 @@
             IdlewildInset: "IdlewildInset"
         }
 
-        const currentMap = {
+        const appData = {
             type: "marker",
             data: [],
             tileLayer: mapTilesNames.main,
@@ -355,6 +355,9 @@
 
             // map.pm.disableDraw('Polygon');
 
+            appData.editLayerId = null
+
+
             const type = e.shape.toLowerCase()
             const layer = e.layer
 
@@ -410,7 +413,7 @@
             BrandenlandsInsetTileLayer.remove()
             IdlewildInsetTileLayer.addTo(map)
 
-            currentMap.tileLayer = mapTilesNames.IdlewildInset
+            appData.tileLayer = mapTilesNames.IdlewildInset
 
             drawAllItems()
         }
@@ -431,7 +434,7 @@
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.addTo(map)
 
-            currentMap.tileLayer = mapTilesNames.BrandenlandsInset
+            appData.tileLayer = mapTilesNames.BrandenlandsInset
 
             drawAllItems()
         }
@@ -454,7 +457,7 @@
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
 
-            currentMap.tileLayer = mapTilesNames.main
+            appData.tileLayer = mapTilesNames.main
 
             drawAllItems()
         }
@@ -478,7 +481,7 @@
 
             //leafelt bounds 
             geometryLayers
-                .filter(l => l.geom.options.id !== currentMap.editLayerId)
+                .filter(l => l.geom.options.id !== appData.editLayerId)
                 .forEach(l => {
                     console.log('l', l);
                     //l.removable && l.geom.remove()
@@ -580,7 +583,7 @@
                                 console.log('info', info);
                                 console.log('result', result);
 
-                                if (tileLayer !== currentMap.tileLayer) {
+                                if (tileLayer !== appData.tileLayer) {
                                     switch (tileLayer) {
                                         case mapTilesNames.BrandenlandsInset:
                                             switchToBrandenlandsInset()
@@ -700,7 +703,7 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log('All items:', data)
-                    currentMap.data = data
+                    appData.data = data
 
                     autocomplete(document.getElementById("myInput"), data);
                     drawAllItems()
@@ -711,17 +714,17 @@
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
 
-            currentMap
+            appData
                 .data
                 .filter(geom => {
-                    if (currentMap.type && currentMap.type !== "") {
-                        return geom.type === currentMap.type
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
                     }
                     else {
                         return true
                     }
                 })
-                .filter(tileLayer => tileLayer.tileLayer === currentMap.tileLayer)
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
                 .forEach(d => {
 
                     console.log('d', d);
@@ -743,7 +746,7 @@
                         }).addTo(map);
 
                         point.addEventListener("click", () => {
-                            currentMap.editLayerId = id
+                            appData.editLayerId = id
 
                             const { geometryInput } = generateEditor(d)
                             drawGeometry({
@@ -767,7 +770,7 @@
                             pmIgnore: true
                         }).addTo(map);
                         polygon.addEventListener("click", () => {
-                            currentMap.editLayerId = id
+                            appData.editLayerId = id
                             const { geometryInput } = generateEditor(d)
                             drawGeometry({
                                 color, geometry, type, editCallback: (geometry) => {
@@ -789,7 +792,7 @@
                             pmIgnore: true
                         }).addTo(map);
                         line.addEventListener("click", () => {
-                            currentMap.editLayerId = id
+                            appData.editLayerId = id
                             const { geometryInput } = generateEditor(d)
                             drawGeometry({
                                 color, geometry, type, editCallback: (geometry) => {
@@ -857,7 +860,7 @@
                     info: infoArea.value,
                     type,
                     geometry: JSON.parse(geometryInput.value),
-                    tileLayer: currentMap.tileLayer,
+                    tileLayer: appData.tileLayer,
                     color: selectedColor
                 }
 
@@ -957,7 +960,7 @@
 
                     //layer && layer.setStyle({ color: _color })
 
-                    const editableLayer = geometryLayers.find(l => l.geom.options.id === currentMap.editLayerId)
+                    const editableLayer = geometryLayers.find(l => l.geom.options.id === appData.editLayerId)
                     editableLayer && editableLayer.geom.setStyle({ color: _color, fillColor: _color })
 
 
@@ -1025,24 +1028,28 @@
 
         function buildTypeSelectors() {
 
-            const types = ['marker', 'polygon', 'line']
+            const types = [
+                { name: 'marker', label: "Location" },
+                { name: 'polygon', label: "Region" },
+                { name: 'line', label: "Path" }
+            ]
             const container = document.getElementById("selectors")
             types.forEach(type => {
 
                 const input = document.createElement("input")
                 input.type = "radio"
                 input.name = "type"
-                input.value = type
-                input.checked = type === 'marker'
-                input.id = type
+                input.value = type.name
+                input.checked = type.name === 'marker'
+                input.id = type.name
                 input.addEventListener("change", () => {
-                    currentMap.type = type
+                    appData.type = type.name
                     drawAllItems()
                 })
 
                 const label = document.createElement("label")
-                label.htmlFor = type
-                label.innerText = type
+                label.htmlFor = type.name
+                label.innerText = type.label
 
                 const div = document.createElement("div")
                 div.appendChild(input)
