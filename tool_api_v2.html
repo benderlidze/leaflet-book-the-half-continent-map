@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Map</title>
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-rastercoords"></script>
+
+
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6"></script>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #main {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+        }
+
+        #left {
+            flex: 1;
+        }
+
+        #right {
+            width: 300px;
+            display: flex;
+            box-sizing: border-box;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        #info {
+            padding: 10px;
+        }
+
+        .autocomplete {
+            /*the container must be positioned relative:*/
+            position: relative;
+            display: inline-block;
+        }
+
+        .autocomplete>input {
+            border: 1px solid transparent;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .autocomplete>input[type=text] {
+            background-color: #f1f1f1;
+            width: 100%;
+        }
+
+        .autocomplete>input[type=submit] {
+            background-color: DodgerBlue;
+            color: #fff;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            /*position the autocomplete items to be the same width as the container:*/
+            top: 100%;
+            left: 0;
+            right: 0;
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+
+        .autocomplete-items div:hover {
+            /*when hovering an item:*/
+            background-color: #e9e9e9;
+        }
+
+        .autocomplete-active {
+            /*when navigating through the items using the arrow keys:*/
+            background-color: DodgerBlue !important;
+            color: #ffffff;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            z-index: 1000;
+            gap: 5px;
+        }
+
+        #full-map,
+        #idlewild-inset,
+        #brandenlands-inset {
+            padding: 10px;
+            z-index: 1000;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            flex-direction: column;
+            text-align: center;
+            border: 1px solid #535353;
+        }
+
+        #button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .container-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .list-item {
+            padding: 5px;
+            cursor: pointer;
+            border: 1px solid #535353;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main">
+        <div id="left">
+            <div id="container">
+                <div id="full-map">Full Map</div>
+                <div id="idlewild-inset">Idlewild </div>
+                <div id="brandenlands-inset">Brandenlands </div>
+            </div>
+            <div id="map"></div>
+        </div>
+        <div id="right">
+            <div class="autocomplete" style="width:100%;">
+                <input id="myInput" type="text" name="myCountry" placeholder="Search">
+            </div>
+            <div id="selectors"></div>
+            <div id="info"></div>
+
+            <div class="container-column">
+                <!-- <button id="create-pin">Create pin</button>
+                <button id="create-line">Create line</button>
+                <button id="create-polygon">Create polygon</button> -->
+                <div id="geometry-editor"></div>
+            </div>
+
+            <div class="container-column" id="geometry-list"></div>
+
+            <!-- <div id="button-container">
+                <button id="generate">Genrate</button>
+                <button id="clear">Clear</button>
+            </div> -->
+
+            <div id="coords"></div>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'https://serg.one/tool_api/api.php';
+        //const apiUrl = 'api/api.php';
+
+        const geometryList = document.getElementById("geometry-list")
+        const editorDiv = document.getElementById("geometry-editor")
+
+        const coordsDiv = document.getElementById("coords")
+        const info = document.getElementById("info")
+        const fullMap = document.getElementById("full-map")
+
+        const createPolygon = document.getElementById("create-polygon")
+
+        const idlewildInset = document.getElementById("idlewild-inset")
+        const brandenlandsInset = document.getElementById("brandenlands-inset")
+
+        const generateButton = document.getElementById("generate")
+        const clearButton = document.getElementById("clear")
+
+        const geometryLayers = []
+        const tempCoords = []
+
+        const img = {
+            x: 23622,  // original width of image 
+            y: 18315   // original height of image
+        }
+        const mapTilesNames = {
+            main: "Main",
+            BrandenlandsInset: "BrandenlandsInset",
+            IdlewildInset: "IdlewildInset"
+        }
+
+        const currentMap = {
+            tileLayer: mapTilesNames.main
+        }
+
+        const BrandenlandsInset = {
+            geometry: [
+                { x: 11718, y: 9902 },
+                { x: 11718, y: 10761 },
+                { x: 11070, y: 10761 },
+                { x: 11070, y: 9902 },
+            ],
+            img: { x: 2506, y: 2715 },
+            tiles: "tiles_brandenlands/{z}/{x}/{y}.png"
+        }
+
+        const IdlewildInset = {
+            geometry: [
+                { x: 11494, y: 9902 },
+                { x: 11494, y: 9486 },
+                { x: 13058, y: 9486 },
+                { x: 13048, y: 10296 },
+                { x: 11718, y: 10320 },
+                { x: 11718, y: 9902 }
+            ],
+            img: { x: 4961, y: 3307 },
+            tiles: "tiles_idlewild/{z}/{x}/{y}.png"
+        }
+
+        // create the map
+        var map = L.map('map', {
+            crs: L.CRS.Simple,
+            maxZoom: 7,
+            minZoom: 1,
+            zoomControl: false,
+            preferCanvas: true,
+            noWrap: true,
+            edgeBufferTiles: 20,
+            maxBounds: mapBounds,
+            maxBoundsViscosity: 1.0
+        })
+
+        // add leaflet.pm controls to the map
+        map.pm.addControls({
+            position: 'topright',
+            drawMarker: true,
+            drawCircleMarker: false,
+            drawPolygon: true,
+            drawLineString: true,
+            drawCircle: false,
+            drawPolyline: true,
+            drawRectangle: false,
+            drawText: false,
+            cutPolygon: false
+        });
+
+        var rc = new L.RasterCoords(map, [img.x, img.y])
+        var mapBounds = new L.LatLngBounds(
+            rc.unproject([1, img.y], 8),
+            rc.unproject([img.x, 1], 8)
+        );
+        map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
+        map.setZoom(2)
+
+        const tileLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+            noWrap: true,
+            preferCanvas: true,
+            bounds: mapBounds
+        }).addTo(map)
+
+        const BrandenlandsInsetTileLayer = L.tileLayer(BrandenlandsInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
+        const IdlewildInsetTileLayer = L.tileLayer(IdlewildInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
+
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+
+        map.setMaxBounds(mapBounds);
+
+        // map.on("click", e => {
+        //     const c = rc.project(e.latlng);
+        //     console.log('c', e.latlng, c);
+        //     //     const { x, y } = c
+        //     //     tempCoords.push({ x, y })
+        //     //     coordsDiv.innerHTML = tempCoords.map(c => `{x: ${c.x.toFixed(0)}, y: ${c.y.toFixed(0)}},`).join('<br>')
+        // })
+
+        // createPolygon.addEventListener("click", () => {
+        //     // Enable polygon draw mode
+        //     map.pm.enableDraw('Polygon', {
+        //         snappable: true,
+        //         snapDistance: 20
+        //     });
+        // })
+
+        getAllItems()
+
+        map.on('pm:drawstart', function (e) {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+        });
+
+        map.on('pm:create', function (e) {
+
+            console.log('e.shape', e.shape);
+            console.log('Polygon created!', e.layer);
+
+            // map.pm.disableDraw('Polygon');
+
+            const type = e.shape.toLowerCase()
+            const layer = e.layer
+
+            const shapes = layer.toGeoJSON();
+            const points = turf.coordAll(shapes)
+            const coords = points.map(p => {
+                const c = rc.project(p);
+                const { x, y } = c
+                return { x: Math.abs(y), y: Math.abs(x) }
+            })
+
+            const { geometryInput } = generateEditor({
+                name: type,
+                description: 'Polygon description',
+                type: type,
+                geometry: coords,
+                tileLayer: 'Main',
+                layer
+            })
+
+            drawGeometry({
+                color: "red", geometry: coords, type, editCallback: (geometry) => {
+                    geometryInput.value = JSON.stringify(geometry)
+                }
+            })
+
+            layer.remove()
+
+            console.log('coords!!!!!!!!!!!!!!!! ADD geometry to >????', coords);
+        });
+
+
+        // ------------- SWITCH MAPS -----------------
+        fullMap.addEventListener('click', switchToMain)
+        idlewildInset.addEventListener('click', switchToIdlewildInset)
+        brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
+
+        function switchToIdlewildInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const { img } = IdlewildInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(5)
+            map.fitBounds(mapBounds);
+            tileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
+            IdlewildInsetTileLayer.addTo(map)
+
+            currentMap.tileLayer = mapTilesNames.IdlewildInset
+        }
+        function switchToBrandenlandsInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const { img, tiles } = BrandenlandsInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(4)
+            map.fitBounds(mapBounds);
+            tileLayer.remove()
+            IdlewildInsetTileLayer.remove()
+            BrandenlandsInsetTileLayer.addTo(map)
+
+            currentMap.tileLayer = mapTilesNames.BrandenlandsInset
+        }
+        function switchToMain() {
+
+            tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 8),
+                rc.unproject([img.x, 1], 8)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(7)
+            map.setZoom(2)
+
+            tileLayer.addTo(map)
+
+            IdlewildInsetTileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            currentMap.tileLayer = mapTilesNames.main
+
+        }
+
+        function unproject(arr) {
+            const { lat, lng } = rc.unproject(arr)
+            return [lng, lat]
+        }
+
+        function showInfo(data) {
+            console.log('info', data);
+            info.innerHTML = data
+        }
+
+
+        function drawGeometry(data, removable = true) {
+
+            console.log('data', data);
+            const { geometry, color, type, fit = true, stroke = false, editCallback } = data
+            if (!geometry) return
+            //leafelt bounds 
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const mapBounds = L.latLngBounds();
+            const unpCoords = geometry.map(c => {
+                console.log('c', c);
+                mapBounds.extend(rc.unproject([c.x, c.y]))
+                return rc.unproject([c.x, c.y])
+            })
+            fit && map.fitBounds(mapBounds);
+
+            if (type === 'marker') {
+                const point = L.circle(unpCoords[0], {
+                    color,
+                    radius: 0.5,
+                    "fillOpacity": 0.5,
+                    "opacity": 0.5,
+                }).addTo(map);
+
+                geometryLayers.push({ geom: point, removable })
+                // polygon.pm.enable();
+                point.on('pm:edit', updateCoords);
+                point.on('pm:dragend', updateCoords);
+                point.on('pm:rotateend', updateCoords);
+
+                return point;
+            }
+
+            if (type === 'polygon') {
+                const polygon = L.polygon(unpCoords, {
+                    fillColor: color,
+                    weight: stroke ? 3 : 0,
+                    opacity: 1,
+                    color: 'red',  //Outline color
+                    fillOpacity: 0.5
+                }).addTo(map);
+                geometryLayers.push({ geom: polygon, removable })
+
+                // polygon.pm.enable();
+                polygon.on('pm:edit', updateCoords);
+                polygon.on('pm:dragend', updateCoords);
+                polygon.on('pm:rotateend', updateCoords);
+
+                return polygon;
+            }
+
+            if (type === 'line') {
+                const line = L.polyline(unpCoords, {
+                    color,
+                    "fillOpacity": 1,
+                    "opacity": 1,
+                    "weight": 5
+                }).addTo(map);
+                geometryLayers.push({ geom: line, removable })
+
+                // polygon.pm.enable();
+                line.on('pm:edit', updateCoords);
+                line.on('pm:dragend', updateCoords);
+                line.on('pm:rotateend', updateCoords);
+
+                return line;
+            }
+
+            function updateCoords(e) {
+                const coords = getCoordinates(e)
+                editCallback && editCallback(coords)
+            }
+        }
+
+        function getCoordinates(event) {
+            const layer = event.layer;
+            const shapes = layer.toGeoJSON();
+            const points = turf.coordAll(shapes)
+            const coords = points.map(p => {
+                const c = rc.project(p);
+                const { x, y } = c
+                return { x: Math.abs(y), y: Math.abs(x) }
+            })
+            console.log('coords', coords);
+            return coords
+        }
+
+        function autocomplete(inp, arr) {
+            /*the autocomplete function takes two arguments,
+            the text field element and an array of possible autocompleted values:*/
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+                    /*check if the item starts with the same letters as the text field value:*/
+                    if (arr[i].name.toUpperCase().includes(val.toUpperCase())) {
+
+                        const { name, id } = arr[i]
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+
+                        //replace the matching part with bold text
+                        //b.innerHTML += name.replace(new RegExp(val, 'gi'), (match) => `<strong>${match}</strong>`)
+                        b.innerHTML += name.replace(new RegExp(val, 'i'), (match) => `<strong>${match}</strong>`);
+
+
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += `<input type='hidden' data-name="${name}" value="${id}">`;
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", async function (e) {
+
+                            const id = this.getElementsByTagName("input")[0].value;
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].dataset.name;
+                            /*close the list of autocompleted values,
+                            (or any other open lists of autocompleted values:*/
+
+                            const result = arr.find(s => s.id == id)
+                            if (result) {
+
+                                inp.value = ''
+
+                                const { x, y, color, info, geometry, type, tileLayer = mapTilesNames.main } = result
+                                console.log('type', type);
+                                console.log('info', info);
+                                console.log('result', result);
+
+                                if (tileLayer !== currentMap.tileLayer) {
+                                    switch (tileLayer) {
+                                        case mapTilesNames.BrandenlandsInset:
+                                            switchToBrandenlandsInset()
+                                            break;
+                                        case mapTilesNames.IdlewildInset:
+                                            switchToIdlewildInset()
+                                            break;
+                                        case mapTilesNames.main:
+                                            switchToMain()
+                                            break;
+                                    }
+
+                                    await new Promise(resolve => {
+                                        map.once('moveend', () => {
+                                            resolve()
+                                        })
+                                        setTimeout(() => {
+                                            resolve()
+                                        }, 2000)
+                                    })
+                                }
+
+                                //await new Promise(resolve => setTimeout(resolve, 500));
+                                // switch (type) {
+                                //     case 'marker':
+                                //         showInfo(info)
+                                //         drawGeometry(result)
+                                //         break;
+                                //     case 'polygon':
+                                //         const polygon = drawGeometry(result)
+                                //         showInfo(info)
+                                //         break;
+                                //     case 'line':
+                                //         const line = drawGeometry(result)
+                                //         showInfo(info)
+                                //         break;
+                                // }
+
+                                const { geometryInput } = generateEditor(result)
+                                drawGeometry({
+                                    color, geometry, type, editCallback: (geometry) => {
+                                        geometryInput.value = JSON.stringify(geometry)
+                                    }
+                                })
+
+                            }
+
+                            closeAllLists();
+                        });
+                        a.appendChild(b);
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+
+
+        // function rebuildAutocomplete() {
+        //     fetch(apiUrl)
+        //         .then(res => res.json())
+        //         .then(data => {
+        //             console.log('data', data);
+        //             autocomplete(document.getElementById("myInput"), data);
+        //         })
+        // }
+        // rebuildAutocomplete()
+
+        // GET all items
+        function getAllItems() {
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                noCache: true
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('All items:', data)
+                    autocomplete(document.getElementById("myInput"), data);
+
+                    drawAllItems({ data })
+                })
+        }
+
+        function drawAllItems({ data, type }) {
+
+            const geom = type && type !== ''
+                ? data.filter(d => d.type === type)
+                : data
+
+
+            geom.forEach(d => {
+                const { id, name, info, type, geometry, tileLayer, color } = d
+
+                const unpCoords = geometry.map(c => {
+                    return rc.unproject([c.x, c.y])
+                })
+
+                if (type === 'marker') {
+
+                    const point = L.circle(unpCoords[0], {
+                        color,
+                        radius: 0.5,
+                        "fillOpacity": 0.5,
+                        "opacity": 0.5,
+                        pmIgnore: true
+                    }).addTo(map);
+
+                    point.addEventListener("click", () => {
+                        const { geometryInput } = generateEditor(d)
+                        drawGeometry({
+                            color, geometry, type, editCallback: (geometry) => {
+                                geometryInput.value = JSON.stringify(geometry)
+                            }
+                        })
+                    })
+                    geometryLayers.push({ geom: point, removable: true })
+                }
+
+                if (type === 'polygon') {
+                    const polygon = L.polygon(unpCoords, {
+                        fillColor: color,
+                        weight: 2,
+                        opacity: 1,
+                        color: color,  //Outline color
+                        fillOpacity: 0.5,
+                        pmIgnore: true
+                    }).addTo(map);
+                    polygon.addEventListener("click", () => {
+                        const { geometryInput } = generateEditor(d)
+                        drawGeometry({
+                            color, geometry, type, editCallback: (geometry) => {
+                                geometryInput.value = JSON.stringify(geometry)
+                            }
+                        })
+                    })
+                    geometryLayers.push({ geom: polygon, removable: true })
+                }
+
+                if (type === 'line') {
+                    const line = L.polyline(unpCoords, {
+                        color,
+                        "fillOpacity": 1,
+                        "opacity": 1,
+                        "weight": 5,
+                        pmIgnore: true
+                    }).addTo(map);
+                    geometryLayers.push({ geom: line, removable: true })
+                }
+            })
+
+
+        }
+
+        // POST a new item
+        function createItem(item) {
+
+            // ':type' => $data['type'],
+            // ':name' => $data['name'],
+            // ':info' => $data['info'],
+            // ':geometry' => json_encode($data['geometry']),
+            // ':tileLayer' => $data['tileLayer']
+
+            const action = item.id && item.id > 0 ? 'UPDATE' : 'INSERT'
+            return fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ...item, action }),
+            })
+                .then(response => response.json())
+
+        }
+
+
+        function generateEditor({
+            id,
+            type,
+            name,
+            info,
+            geometry,
+            tileLayer,
+            layer,
+            color
+        }) {
+            let selectedColor = color
+            const container = document.createElement("div")
+            container.className = "container-column"
+
+            const nameInput = document.createElement("input")
+            nameInput.placeholder = "Name"
+            nameInput.value = name
+
+            const infoArea = document.createElement("textarea")
+            infoArea.placeholder = "Description"
+            infoArea.value = info
+
+            const saveButton = document.createElement("button")
+            saveButton.innerText = "Save"
+            saveButton.style.flex = 1
+            saveButton.addEventListener("click", async () => {
+                const item = {
+                    id,
+                    name: nameInput.value,
+                    info: infoArea.value,
+                    type,
+                    geometry: JSON.parse(geometryInput.value),
+                    tileLayer: currentMap.tileLayer,
+                    color: selectedColor
+                }
+
+                await createItem(item)
+
+                //remove old geomerty
+                layer && layer.remove()
+                geometryLayers.forEach(l => l.removable && l.geom.remove())
+                geometryLayers.length = 0
+
+                editorDiv.innerHTML = ''
+
+                getAllItems()//refetch the new data
+            })
+
+            const cancelButton = document.createElement("button")
+            cancelButton.innerText = "Cancel"
+            cancelButton.style.flex = 1
+            cancelButton.addEventListener("click", () => {
+                editorDiv.innerHTML = ''
+
+                layer && layer.remove()
+                geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+                getAllItems()
+            })
+
+            const deleteButton = document.createElement("button")
+            deleteButton.innerHTML = `
+                <svg width="25px" height="25px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20.5001 6H3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M9.5 11L10 16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M14.5 11L14 16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="white" stroke-width="1.5"/>
+                <path d="M18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5M18.8334 8.5L18.6334 11.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>`
+            deleteButton.style.width = "50px"
+            deleteButton.style.padding = "5px"
+            deleteButton.style.backgroundColor = "red"
+
+            deleteButton.addEventListener("click", () => {
+
+                modalAlert({
+                    del: () => {
+                        editorDiv.innerHTML = ''
+                        layer && layer.remove()
+                        geometryLayers.forEach(l => l.removable && l.geom.remove())
+                        fetch(apiUrl, {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ id, action: 'DELETE' }),
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('data', data);
+                                getAllItems()
+
+                                geometryLayers.length = 0
+                            })
+                    },
+                    cancel: () => {
+                        console.log('cancel');
+                        geometryLayers.length = 0
+                    }
+                })
+            })
+
+            const buttonsContainer = document.createElement("div")
+            buttonsContainer.style = "display: flex; gap: 5px; flex-direction: row;"
+            buttonsContainer.appendChild(saveButton)
+            buttonsContainer.appendChild(cancelButton)
+            buttonsContainer.appendChild(deleteButton)
+
+
+
+            const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'black']
+            const colorContainer = document.createElement("div")
+            colorContainer.style = "display: flex; gap: 2px; flex-direction: row;"
+            colors.forEach(_color => {
+                const button = document.createElement("div")
+                button.style.backgroundColor = _color
+                button.style.width = "20px"
+                button.style.height = "20px"
+                button.style.border = "1px solid black"
+                button.style.cursor = "pointer"
+                button.addEventListener("click", () => {
+                    console.log('_color', _color);
+                    console.log('layer', layer);
+
+                    layer && layer.setStyle({ color: _color })
+
+                    const editableLayer = geometryLayers[0]
+                    editableLayer && editableLayer.geom.setStyle({ color: _color, fillColor: _color })
+
+
+                    // drawGeometry({
+                    //     geometry, type, color: _color, editCallback: (geometry) => {
+                    //         geometryInput.value = JSON.stringify(geometry)
+                    //     }
+                    // })
+                    selectedColor = _color
+                })
+                colorContainer.appendChild(button)
+            })
+
+            const geometryInput = document.createElement("textarea")
+            geometryInput.value = JSON.stringify(geometry)
+
+            container.appendChild(nameInput)
+            container.appendChild(infoArea)
+            container.appendChild(geometryInput)
+            container.appendChild(colorContainer)
+            container.appendChild(buttonsContainer)
+
+            editorDiv.innerHTML = ''
+            editorDiv.appendChild(container)
+
+            return { editorDiv, container, geometryInput }
+        }
+
+
+        // function generateGeometryList(data) {
+
+        //     const container = document.createElement("div")
+        //     data.forEach(d => {
+
+        //         const { id, name, info, type, geometry, tileLayer, color } = d
+        //         const item = document.createElement("div")
+        //         item.className = "list-item"
+        //         item.innerHTML = `${d.id}.  ${d.name}`
+        //         item.addEventListener("click", async () => {
+
+        //             console.log('tileLayer', tileLayer);
+        //             console.log('tileLayer', currentMap.tileLayer);
+
+        //             if (tileLayer !== currentMap.tileLayer) {
+
+        //                 switch (tileLayer) {
+        //                     case mapTilesNames.BrandenlandsInset:
+        //                         switchToBrandenlandsInset()
+        //                         break;
+        //                     case mapTilesNames.IdlewildInset:
+        //                         switchToIdlewildInset()
+        //                         break;
+        //                     case mapTilesNames.main:
+        //                         switchToMain()
+        //                         break;
+        //                 }
+        //                 await new Promise(resolve => {
+        //                     map.once('moveend', () => {
+        //                         resolve()
+        //                     })
+        //                     setTimeout(() => {
+        //                         resolve()
+        //                     }, 2000)
+        //                 })
+        //             }
+        //             const { geometryInput } = generateEditor({
+        //                 id,
+        //                 name,
+        //                 info,
+        //                 type,
+        //                 geometry,
+        //                 tileLayer,
+        //                 color
+        //             })
+        //             drawGeometry({
+        //                 color, geometry, type, editCallback: (geometry) => {
+        //                     geometryInput.value = JSON.stringify(geometry)
+        //                 }
+        //             })
+        //         })
+        //         container.appendChild(item)
+        //     })
+        //     return container
+        // }
+
+
+        function modalAlert({ del, cancel }) {
+            const modal = document.createElement("div")
+            modal.style = "z-index:1000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;"
+
+            const container = document.createElement("div")
+            container.style = "display:flex; gap:10px; flex-direction:column;  background-color: white; padding: 20px; border-radius: 5px;gap"
+
+            const text = document.createElement("div")
+            text.innerText = "Are you sure you want to delete?"
+            container.appendChild(text)
+
+            const buttonContainer = document.createElement("div")
+            buttonContainer.style = "display:flex; gap:10px; flex-direction:row; justify-content: center;"
+
+            const okButton = document.createElement("button")
+            okButton.innerText = "Delete"
+            okButton.style.flex = 1
+            okButton.addEventListener("click", () => {
+                del && del()
+                modal.remove()
+            })
+
+            const cancelButton = document.createElement("button")
+            cancelButton.innerText = "Cancel"
+            cancelButton.style.flex = 1
+            cancelButton.addEventListener("click", () => {
+                cancel && cancel()
+                modal.remove()
+            })
+
+            buttonContainer.appendChild(okButton)
+            buttonContainer.appendChild(cancelButton)
+            container.appendChild(buttonContainer)
+
+            modal.appendChild(container)
+
+            document.body.appendChild(modal)
+        }
+
+
+        buildTypeSelectors()
+        function buildTypeSelectors() {
+
+            const types = ['marker', 'polygon', 'line']
+            const container = document.getElementById("selectors")
+            types.forEach(type => {
+
+                const input = document.createElement("input")
+                input.type = "radio"
+                input.name = "type"
+                input.value = type
+                input.id = type
+                input.addEventListener("change", () => {
+
+                    refetchData(type)
+
+                })
+
+                const label = document.createElement("label")
+                label.htmlFor = type
+                label.innerText = type
+
+                const div = document.createElement("div")
+                div.appendChild(input)
+                div.appendChild(label)
+
+                container.appendChild(div)
+            })
+
+        }
+    </script>
+
+
+
+</body>
+
+</html>
