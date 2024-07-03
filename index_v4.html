@@ -456,6 +456,7 @@
                 const polygon = L.polygon(unpCoords, {
 
                     fillColor: color,
+                    originalColor: color,
                     weight: stroke ? 3 : 0,
                     opacity: 1,
                     color: 'red',
@@ -712,9 +713,10 @@
                             color: "gray",
                         })
                     })
+                console.log('layer===>', layer);
                 layer.geom.setStyle({
-                    fillColor: layer.geom.options.color,
-                    color: layer.geom.options.color,
+                    fillColor: layer.geom.options.originalColor || "red",
+                    color: layer.geom.options.originalColor || "red",
                 })
             }
         }
@@ -723,6 +725,7 @@
         function drawAllItems() {
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
 
             appData
                 .data
@@ -738,17 +741,21 @@
                 .forEach(d => {
 
                     console.log('d', d);
-                    const { id, name, info, type, geometry, tileLayer, color } = d
+
+                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const color = initialColor ?? 'red';
 
                     const unpCoords = geometry.map(c => {
                         return rc.unproject([c.x, c.y])
                     })
+                    console.log('color!!!!!', color);
 
                     if (type === 'marker') {
 
                         const point = L.circle(unpCoords[0], {
                             id,
                             color,
+                            originalColor: color,
                             radius: 0.5,
                             "fillOpacity": 0.5,
                             "opacity": 0.5,
@@ -758,6 +765,9 @@
                         point.addEventListener("click", () => {
                             appData.editLayerId = id
                             const { geometryInput } = generateEditor(d)
+
+                            emphasizeItem(id)
+
                         })
                         geometryLayers.push({ id, geom: point, removable: true })
                     }
@@ -766,6 +776,7 @@
                         const polygon = L.polygon(unpCoords, {
                             id,
                             fillColor: color,
+                            originalColor: color,
                             weight: 2,
                             opacity: 1,
                             color: color,  //Outline color
@@ -775,7 +786,7 @@
                         polygon.addEventListener("click", () => {
                             appData.editLayerId = id
                             const { geometryInput } = generateEditor(d)
-
+                            emphasizeItem(id)
                         })
                         geometryLayers.push({ id, geom: polygon, removable: true })
                     }
@@ -784,6 +795,7 @@
                         const line = L.polyline(unpCoords, {
                             id,
                             color,
+                            originalColor: color,
                             "fillOpacity": 1,
                             "opacity": 1,
                             "weight": 5,
@@ -792,7 +804,7 @@
                         line.addEventListener("click", () => {
                             appData.editLayerId = id
                             const { geometryInput } = generateEditor(d)
-
+                            emphasizeItem(id)
                         })
                         geometryLayers.push({ id, geom: line, removable: true })
                     }
