@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Map</title>
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-rastercoords"></script>
+
+
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6"></script>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #main {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+        }
+
+        #left {
+            flex: 1;
+        }
+
+        #right {
+            width: 300px;
+            display: flex;
+            box-sizing: border-box;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+        }
+
+        #info {
+            padding: 10px;
+        }
+
+        .autocomplete {
+            /*the container must be positioned relative:*/
+            position: relative;
+            display: inline-block;
+        }
+
+        .autocomplete>input {
+            border: 1px solid transparent;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .autocomplete>input[type=text] {
+            background-color: #f1f1f1;
+            width: 100%;
+        }
+
+        .autocomplete>input[type=submit] {
+            background-color: DodgerBlue;
+            color: #fff;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            /*position the autocomplete items to be the same width as the container:*/
+            top: 100%;
+            left: 0;
+            right: 0;
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+
+        .autocomplete-items div:hover {
+            /*when hovering an item:*/
+            background-color: #e9e9e9;
+        }
+
+        .autocomplete-active {
+            /*when navigating through the items using the arrow keys:*/
+            background-color: DodgerBlue !important;
+            color: #ffffff;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            z-index: 1000;
+            gap: 5px;
+        }
+
+        #full-map,
+        #idlewild-inset,
+        #brandenlands-inset {
+            position: absolute;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            flex-direction: column;
+            text-align: center;
+
+            border: 1px solid #535353;
+        }
+
+        #button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .container-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .list-item {
+            padding: 5px;
+            cursor: pointer;
+            border: 1px solid #535353;
+        }
+
+        #selectors {
+            border: 1px solid gray;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-radius: 10px;
+            margin: 10px;
+            width: fit-content;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main">
+        <div id="left">
+            <div id="container">
+                <div id="full-map">Full Map</div>
+                <!-- <div id="idlewild-inset">Idlewild </div>
+                <div id="brandenlands-inset">Brandenlands </div> -->
+            </div>
+            <div id="map"></div>
+        </div>
+        <div id="right">
+            <div class="autocomplete" style="width:100%;">
+                <input id="myInput" type="text" name="myCountry" placeholder="Search">
+            </div>
+            <div id="selectors"></div>
+            <div id="info"></div>
+
+            <div class="container-column">
+                <!-- <button id="create-pin">Create pin</button>
+                <button id="create-line">Create line</button>
+                <button id="create-polygon">Create polygon</button> -->
+                <div id="geometry-editor"></div>
+            </div>
+
+            <div class="container-column" id="geometry-list"></div>
+
+            <!-- <div id="button-container">
+                <button id="generate">Genrate</button>
+                <button id="clear">Clear</button>
+            </div> -->
+
+            <div id="coords"></div>
+        </div>
+    </div>
+
+    <script>
+
+
+        const apiUrl = 'https://serg.one/tool_api/api.php';
+
+        const geometryList = document.getElementById("geometry-list")
+        const editorDiv = document.getElementById("geometry-editor")
+
+        const coordsDiv = document.getElementById("coords")
+        const info = document.getElementById("info")
+        const fullMap = document.getElementById("full-map")
+
+        const createPolygon = document.getElementById("create-polygon")
+
+        // const idlewildInset = document.getElementById("idlewild-inset")
+        // const brandenlandsInset = document.getElementById("brandenlands-inset")
+
+        const generateButton = document.getElementById("generate")
+        const clearButton = document.getElementById("clear")
+
+        const geometryLayers = []
+        const tempCoords = []
+
+        const img = {
+            x: 23622,  // original width of image 
+            y: 18315   // original height of image
+        }
+        const mapTilesNames = {
+            main: "Main",
+            BrandenlandsInset: "BrandenlandsInset",
+            IdlewildInset: "IdlewildInset"
+        }
+
+        const appData = {
+            type: "marker",
+            data: [],
+            tileLayer: mapTilesNames.main,
+            editLayerId: null
+            //editMode: false //if edit move disable all interactions till save cancel delete
+        }
+
+        const BrandenlandsInset = {
+            geometry: [
+                { x: 11718, y: 9902 },
+                { x: 11718, y: 10761 },
+                { x: 11070, y: 10761 },
+                { x: 11070, y: 9902 },
+            ],
+            img: { x: 2506, y: 2715 },
+            tiles: "tiles_brandenlands/{z}/{x}/{y}.png"
+        }
+
+        const IdlewildInset = {
+            geometry: [
+                { x: 11494, y: 9902 },
+                { x: 11494, y: 9486 },
+                { x: 13058, y: 9486 },
+                { x: 13048, y: 10296 },
+                { x: 11718, y: 10320 },
+                { x: 11718, y: 9902 }
+            ],
+            img: { x: 4961, y: 3307 },
+            tiles: "tiles_idlewild/{z}/{x}/{y}.png"
+        }
+
+        // create the map
+        var map = L.map('map', {
+            crs: L.CRS.Simple,
+            maxZoom: 7,
+            minZoom: 1,
+            zoomControl: false,
+            preferCanvas: true,
+            noWrap: true,
+            edgeBufferTiles: 20,
+            maxBounds: mapBounds,
+            maxBoundsViscosity: 1.0
+        })
+
+        var rc = new L.RasterCoords(map, [img.x, img.y])
+        var mapBounds = new L.LatLngBounds(
+            rc.unproject([1, img.y], 8),
+            rc.unproject([img.x, 1], 8)
+        );
+        map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
+        map.setZoom(2)
+
+        const tileLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+            noWrap: true,
+            preferCanvas: true,
+            bounds: mapBounds
+        }).addTo(map)
+
+        const BrandenlandsInsetTileLayer = L.tileLayer(BrandenlandsInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
+        const IdlewildInsetTileLayer = L.tileLayer(IdlewildInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
+
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+
+        map.setMaxBounds(mapBounds);
+
+
+        getAllItems()
+
+        // ------------- SWITCH MAPS -----------------
+        fullMap.addEventListener('click', switchToMain)
+        // idlewildInset.addEventListener('click', switchToIdlewildInset)
+        // brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
+
+        const BrandenlandsInsetPolygon = drawGeometry({
+            geometry: BrandenlandsInset.geometry,
+            color: "#e2d5e9",
+            type: "polygon",
+            fit: false,
+            stroke: "red"
+        }, false)
+        BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
+
+        const IdlewildInsetPolygon = drawGeometry({
+            geometry: IdlewildInset.geometry,
+            color: "#c9e2d4",
+            type: "polygon",
+            fit: false,
+            stroke: "red"
+        }, false)
+        IdlewildInsetPolygon.on('click', switchToIdlewildInset)
+
+        function switchToIdlewildInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const { img } = IdlewildInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(5)
+            map.fitBounds(mapBounds);
+            tileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
+            BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
+
+            IdlewildInsetTileLayer.addTo(map)
+
+
+            appData.tileLayer = mapTilesNames.IdlewildInset
+
+            drawAllItems()
+        }
+        function switchToBrandenlandsInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const { img, tiles } = BrandenlandsInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(4)
+            map.fitBounds(mapBounds);
+            tileLayer.remove()
+            IdlewildInsetTileLayer.remove()
+            IdlewildInsetPolygon.remove()
+            BrandenlandsInsetPolygon.remove()
+
+            BrandenlandsInsetTileLayer.addTo(map)
+
+            appData.tileLayer = mapTilesNames.BrandenlandsInset
+
+            drawAllItems()
+        }
+        function switchToMain() {
+
+            tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 8),
+                rc.unproject([img.x, 1], 8)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(7)
+            map.setZoom(2)
+
+            tileLayer.addTo(map)
+
+            IdlewildInsetTileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
+
+            IdlewildInsetPolygon.addTo(map)
+            BrandenlandsInsetPolygon.addTo(map)
+
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            appData.tileLayer = mapTilesNames.main
+
+            drawAllItems()
+        }
+
+        function unproject(arr) {
+            const { lat, lng } = rc.unproject(arr)
+            return [lng, lat]
+        }
+
+        function showInfo(data) {
+            console.log('info', data);
+            info.innerHTML = data
+        }
+
+
+        function drawGeometry(data, removable = true) {
+            console.log('drawGeometry');
+
+            const { geometry, color, type, fit = true, stroke = false } = data
+            if (!geometry) return
+            //leafelt bounds 
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+            const unpCoords = geometry.map(c => {
+                mapBounds.extend(rc.unproject([c.x, c.y]))
+                return rc.unproject([c.x, c.y])
+            })
+
+            if (type === 'polygon') {
+                const polygon = L.polygon(unpCoords, {
+
+                    fillColor: color,
+                    weight: stroke ? 3 : 0,
+                    opacity: 1,
+                    color: 'red',
+                    fillOpacity: 0.5
+
+                }).addTo(map);
+                geometryLayers.push({ geom: polygon, removable })
+                return polygon;
+            }
+
+        }
+
+        function getCoordinates(event) {
+            const layer = event.layer;
+            const shapes = layer.toGeoJSON();
+            const points = turf.coordAll(shapes)
+            const coords = points.map(p => {
+                const c = rc.project(p);
+                const { x, y } = c
+                return { x: Math.abs(y), y: Math.abs(x) }
+            })
+            console.log('coords', coords);
+            return coords
+        }
+
+
+
+        function buildTypeSelectors() {
+
+            const types = [
+                { name: 'none', label: "Clear" },
+                { name: 'marker', label: "Location" },
+                { name: 'polygon', label: "Region" },
+                { name: 'line', label: "Path" }
+            ]
+            const container = document.getElementById("selectors")
+
+            return types.map(type => {
+                const input = document.createElement("input")
+                input.type = "radio"
+                input.name = "type"
+                input.value = type.name
+                input.checked = type.name === 'marker'
+                input.id = type.name
+                input.addEventListener("change", () => {
+                    appData.type = type.name
+                    drawAllItems()
+
+                    editorDiv.innerHTML = '' //clear  info
+                })
+
+                const label = document.createElement("label")
+                label.htmlFor = type.name
+                label.innerText = type.label
+
+                const div = document.createElement("div")
+                div.appendChild(input)
+                div.appendChild(label)
+
+                container.appendChild(div)
+
+                return { name: type.name, input }
+            })
+
+        }
+
+
+        function autocomplete(inp, arr) {
+
+            const selectors = buildTypeSelectors()
+
+            /*the autocomplete function takes two arguments,
+            the text field element and an array of possible autocompleted values:*/
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+            inp.addEventListener("input", function (e) {
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+                    /*check if the item starts with the same letters as the text field value:*/
+                    if (arr[i].name.toUpperCase().includes(val.toUpperCase())) {
+
+                        const { name, id } = arr[i]
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+
+                        //replace the matching part with bold text
+                        //b.innerHTML += name.replace(new RegExp(val, 'gi'), (match) => `<strong>${match}</strong>`)
+                        b.innerHTML += name.replace(new RegExp(val, 'i'), (match) => `<strong>${match}</strong>`);
+
+
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += `<input type='hidden' data-name="${name}" value="${id}">`;
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", async function (e) {
+
+                            const id = this.getElementsByTagName("input")[0].value;
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].dataset.name;
+                            /*close the list of autocompleted values,
+                            (or any other open lists of autocompleted values:*/
+
+                            const result = arr.find(s => s.id == id)
+                            if (result) {
+
+                                inp.value = ''
+
+                                const { x, y, color, info, geometry, type, tileLayer = mapTilesNames.main } = result
+                                console.log('type', type);
+                                console.log('info', info);
+                                console.log('result', result);
+
+
+                                selectors.find(s => s.name === type).input.click()
+
+                                if (tileLayer !== appData.tileLayer) {
+                                    switch (tileLayer) {
+                                        case mapTilesNames.BrandenlandsInset:
+                                            switchToBrandenlandsInset()
+                                            break;
+                                        case mapTilesNames.IdlewildInset:
+                                            switchToIdlewildInset()
+                                            break;
+                                        case mapTilesNames.main:
+                                            switchToMain()
+                                            break;
+                                    }
+
+                                    await new Promise(resolve => {
+                                        map.once('moveend', () => {
+                                            resolve()
+                                        })
+                                        setTimeout(() => {
+                                            resolve()
+                                        }, 2000)
+                                    })
+                                }
+
+                                const { geometryInput } = generateEditor(result)
+                                const mapBounds = L.latLngBounds();
+                                const unpCoords = geometry.map(c => {
+                                    mapBounds.extend(rc.unproject([c.x, c.y]))
+                                    return rc.unproject([c.x, c.y])
+                                })
+                                map.fitBounds(mapBounds);
+
+                                emphasizeItem(id)
+                            }
+
+                            closeAllLists();
+                        });
+                        a.appendChild(b);
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+
+
+        // GET all items
+        function getAllItems() {
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                noCache: true
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('All items:', data)
+                    appData.data = data
+
+                    autocomplete(document.getElementById("myInput"), data);
+                    drawAllItems()
+                })
+        }
+
+        function emphasizeItem(id) {
+
+            const layer = geometryLayers.find(l => +l.geom.options.id === +id)
+            if (layer) {
+                console.log('emphasizeItem', layer, id);
+                geometryLayers
+                    .filter(l => +l.geom.options.id !== +id && l.geom.options.id)
+                    .forEach(l => {
+                        l.geom.setStyle({
+                            fillColor: "gray",
+                            color: "gray",
+                        })
+                    })
+                layer.geom.setStyle({
+                    fillColor: layer.geom.options.color,
+                    color: layer.geom.options.color,
+                })
+            }
+        }
+
+
+        function drawAllItems() {
+
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+            appData
+                .data
+                .filter(geom => {
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
+                    }
+                    else {
+                        return true
+                    }
+                })
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .forEach(d => {
+
+                    console.log('d', d);
+                    const { id, name, info, type, geometry, tileLayer, color } = d
+
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            id,
+                            color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            const { geometryInput } = generateEditor(d)
+                        })
+                        geometryLayers.push({ id, geom: point, removable: true })
+                    }
+
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            id,
+                            fillColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            const { geometryInput } = generateEditor(d)
+
+                        })
+                        geometryLayers.push({ id, geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            id,
+                            color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            const { geometryInput } = generateEditor(d)
+
+                        })
+                        geometryLayers.push({ id, geom: line, removable: true })
+                    }
+                })
+        }
+
+        function generateEditor({
+            id,
+            type,
+            name,
+            info,
+        }) {
+            const container = document.createElement("div")
+            container.className = "container-column"
+
+            const nameInput = document.createElement("div")
+            nameInput.style.fontWeight = "bold"
+            nameInput.innerHTML = name
+
+            const infoArea = document.createElement("div")
+            infoArea.innerHTML = info
+
+
+            container.appendChild(nameInput)
+            container.appendChild(infoArea)
+
+            editorDiv.innerHTML = ''
+            editorDiv.appendChild(container)
+
+            return { editorDiv, container }
+        }
+
+        function modalAlert({ del, cancel }) {
+            const modal = document.createElement("div")
+            modal.style = "z-index:1000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;"
+
+            const container = document.createElement("div")
+            container.style = "display:flex; gap:10px; flex-direction:column;  background-color: white; padding: 20px; border-radius: 5px;gap"
+
+            const text = document.createElement("div")
+            text.innerText = "Are you sure you want to delete?"
+            container.appendChild(text)
+
+            const buttonContainer = document.createElement("div")
+            buttonContainer.style = "display:flex; gap:10px; flex-direction:row; justify-content: center;"
+
+            const okButton = document.createElement("button")
+            okButton.innerText = "Delete"
+            okButton.style.flex = 1
+            okButton.addEventListener("click", () => {
+                del && del()
+                modal.remove()
+            })
+
+            const cancelButton = document.createElement("button")
+            cancelButton.innerText = "Cancel"
+            cancelButton.style.flex = 1
+            cancelButton.addEventListener("click", () => {
+                cancel && cancel()
+                modal.remove()
+            })
+
+            buttonContainer.appendChild(okButton)
+            buttonContainer.appendChild(cancelButton)
+            container.appendChild(buttonContainer)
+
+            modal.appendChild(container)
+
+            document.body.appendChild(modal)
+        }
+
+
+
+    </script>
+
+
+
+</body>
+
+</html>
