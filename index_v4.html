@@ -434,13 +434,11 @@
         }
 
         function showInfo(data) {
-            console.log('info', data);
             info.innerHTML = data
         }
 
 
         function drawGeometry(data, removable = true) {
-            console.log('drawGeometry');
 
             const { geometry, color, type, fit = true, stroke = false } = data
             if (!geometry) return
@@ -478,7 +476,7 @@
                 const { x, y } = c
                 return { x: Math.abs(y), y: Math.abs(x) }
             })
-            console.log('coords', coords);
+
             return coords
         }
 
@@ -575,9 +573,6 @@
                                 inp.value = ''
 
                                 const { x, y, color, info, geometry, type, tileLayer = mapTilesNames.main } = result
-                                console.log('type', type);
-                                console.log('info', info);
-                                console.log('result', result);
 
 
                                 selectors.find(s => s.name === type).input.click()
@@ -692,7 +687,7 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('All items:', data)
+
                     appData.data = data
 
                     autocomplete(document.getElementById("myInput"), data);
@@ -704,7 +699,6 @@
 
             const layer = geometryLayers.find(l => +l.geom.options.id === +id)
             if (layer) {
-                console.log('emphasizeItem', layer, id);
                 geometryLayers
                     .filter(l => +l.geom.options.id !== +id && l.geom.options.id)
                     .forEach(l => {
@@ -713,7 +707,6 @@
                             color: "gray",
                         })
                     })
-                console.log('layer===>', layer);
                 layer.geom.setStyle({
                     fillColor: layer.geom.options.originalColor || "red",
                     color: layer.geom.options.originalColor || "red",
@@ -740,15 +733,12 @@
                 .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
                 .forEach(d => {
 
-                    console.log('d', d);
-
                     const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
                     const color = initialColor ?? 'red';
 
                     const unpCoords = geometry.map(c => {
                         return rc.unproject([c.x, c.y])
                     })
-                    console.log('color!!!!!', color);
 
                     if (type === 'marker') {
 
