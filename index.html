@@ -301,9 +301,6 @@
 
         }
 
-
-
-
         function unproject(arr) {
             const { lat, lng } = rc.unproject(arr)
             return [lng, lat]
@@ -313,8 +310,6 @@
             console.log('info', data);
             info.innerHTML = data
         }
-
-
 
         function drawGeometry(data, removable = true) {
 
@@ -437,12 +432,59 @@
 
         fetch("data.json")
             .then(res => res.json())
-            .then(data => {
-                console.log('data', data);
+            .then(async (data) => {
                 autocomplete(document.getElementById("myInput"), data);
+
+                //SEARCH BY URL
+                const urlSearch = new URLSearchParams(window.location.search).get('search')
+                if (urlSearch && urlSearch.length > 0) {
+                    const result = data.find(s => s.name.toLowerCase() === urlSearch.toLowerCase())
+                    await getInfoByName(result)
+                }
             })
 
+        async function getInfoByName(result) {
+
+            if (result) {
+                const { x, y, info, type, tiles = mapTilesNames.main } = result
+                console.log('type', type);
+                console.log('info', info);
+
+                switch (tiles) {
+                    case mapTilesNames.BrandenlandsInset:
+                        switchToBrandenlandsInset()
+                        break;
+                    case mapTilesNames.IdlewildInset:
+                        switchToIdlewildInset()
+                        break;
+                    case mapTilesNames.main:
+                        switchToMain()
+                        break;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                switch (type) {
+                    case 'point':
+                        showInfo(info)
+                        // map.flyTo(rc.unproject([x, y]), map.getMaxZoom())
+                        drawGeometry(result)
+                        break;
+                    case 'polygon':
+                        const polygon = drawGeometry(result)
+                        showInfo(info)
+                        break;
+                    case 'line':
+                        const line = drawGeometry(result)
+                        showInfo(info)
+                        break;
+                }
+            }
+        }
+
         function autocomplete(inp, arr) {
+
+            console.log('arr', arr);
             /*the autocomplete function takes two arguments,
             the text field element and an array of possible autocompleted values:*/
             var currentFocus;
@@ -477,49 +519,12 @@
                         b.innerHTML += `<input type='hidden' data-name="${name}" value="${id}">`;
                         /*execute a function when someone clicks on the item value (DIV element):*/
                         b.addEventListener("click", async function (e) {
+                            inp.value = this.getElementsByTagName("input")[0].dataset.name;
+
 
                             const id = this.getElementsByTagName("input")[0].value;
-                            /*insert the value for the autocomplete text field:*/
-                            inp.value = this.getElementsByTagName("input")[0].dataset.name;
-                            /*close the list of autocompleted values,
-                            (or any other open lists of autocompleted values:*/
-
                             const result = arr.find(s => s.id == id)
-                            if (result) {
-                                const { x, y, info, type, tiles = mapTilesNames.main } = result
-                                console.log('type', type);
-                                console.log('info', info);
-
-                                switch (tiles) {
-                                    case mapTilesNames.BrandenlandsInset:
-                                        switchToBrandenlandsInset()
-                                        break;
-                                    case mapTilesNames.IdlewildInset:
-                                        switchToIdlewildInset()
-                                        break;
-                                    case mapTilesNames.main:
-                                        switchToMain()
-                                        break;
-                                }
-
-                                await new Promise(resolve => setTimeout(resolve, 500));
-
-                                switch (type) {
-                                    case 'point':
-                                        showInfo(info)
-                                        // map.flyTo(rc.unproject([x, y]), map.getMaxZoom())
-                                        drawGeometry(result)
-                                        break;
-                                    case 'polygon':
-                                        const polygon = drawGeometry(result)
-                                        showInfo(info)
-                                        break;
-                                    case 'line':
-                                        const line = drawGeometry(result)
-                                        showInfo(info)
-                                        break;
-                                }
-                            }
+                            await getInfoByName(result)
 
                             closeAllLists();
                         });
