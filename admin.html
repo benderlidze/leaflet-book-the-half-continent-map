@@ -185,6 +185,7 @@
             <div class="autocomplete" style="width:100%;">
                 <input id="myInput" type="text" name="myCountry" placeholder="Search">
             </div>
+            <div id="selectors"></div>
             <div id="info"></div>
 
             <div class="container-column">
@@ -206,8 +207,10 @@
     </div>
 
     <script>
-        const apiUrl = 'https://serg.one/tool_api/api.php';
-        //const apiUrl = 'api/api.php';
+
+
+        //const apiUrl = 'https://serg.one/tool_api/api.php';
+        const apiUrl = 'api/api.php';
 
         const geometryList = document.getElementById("geometry-list")
         const editorDiv = document.getElementById("geometry-editor")
@@ -237,8 +240,12 @@
             IdlewildInset: "IdlewildInset"
         }
 
-        const currentMap = {
-            tileLayer: mapTilesNames.main
+        const appData = {
+            type: "marker",
+            data: [],
+            tileLayer: mapTilesNames.main,
+            editLayerId: null
+            //editMode: false //if edit move disable all interactions till save cancel delete
         }
 
         const BrandenlandsInset = {
@@ -338,7 +345,7 @@
         getAllItems()
 
         map.on('pm:drawstart', function (e) {
-            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            // geometryLayers.forEach(l => l.removable && l.geom.remove())
         });
 
         map.on('pm:create', function (e) {
@@ -347,6 +354,9 @@
             console.log('Polygon created!', e.layer);
 
             // map.pm.disableDraw('Polygon');
+
+            appData.editLayerId = null
+
 
             const type = e.shape.toLowerCase()
             const layer = e.layer
@@ -371,35 +381,15 @@
             drawGeometry({
                 color: "red", geometry: coords, type, editCallback: (geometry) => {
                     geometryInput.value = JSON.stringify(geometry)
-                }
+                },
+                layer: layer
             })
 
-            layer.remove()
+            // layer.remove()
 
-            console.log('coords!!!!!!!!!!!!!!!! ADD geometry to >????', coords);
+            map.pm.disableGlobalEditMode()
         });
 
-
-        // generateButton.addEventListener("click", () => {
-        //     var layers = L.PM.Utils.findLayers(map);
-        //     var group = L.featureGroup();
-        //     layers.forEach((layer) => {
-        //         group.addLayer(layer);
-        //     });
-        //     const shapes = group.toGeoJSON();
-        //     const points = turf.coordAll(shapes)
-        //     const coords = points.map(p => {
-        //         const c = rc.project(p);
-        //         const { x, y } = c
-        //         return { x: Math.abs(y), y: Math.abs(x) }
-        //     })
-        //     coordsDiv.innerHTML = coords.map(c => `{"x": ${c.x.toFixed(0)}, "y": ${c.y.toFixed(0)}}`).join(',<br>')
-        // })
-
-        // clearButton.addEventListener("click", () => {
-        //     geometryLayers.forEach(l => l.removable && l.geom.remove())
-        //     coordsDiv.innerHTML = ''
-        // })
 
         // ------------- SWITCH MAPS -----------------
         fullMap.addEventListener('click', switchToMain)
@@ -423,7 +413,9 @@
             BrandenlandsInsetTileLayer.remove()
             IdlewildInsetTileLayer.addTo(map)
 
-            currentMap.tileLayer = mapTilesNames.IdlewildInset
+            appData.tileLayer = mapTilesNames.IdlewildInset
+
+            drawAllItems()
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -442,7 +434,9 @@
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.addTo(map)
 
-            currentMap.tileLayer = mapTilesNames.BrandenlandsInset
+            appData.tileLayer = mapTilesNames.BrandenlandsInset
+
+            drawAllItems()
         }
         function switchToMain() {
 
@@ -463,8 +457,9 @@
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
 
-            currentMap.tileLayer = mapTilesNames.main
+            appData.tileLayer = mapTilesNames.main
 
+            drawAllItems()
         }
 
         function unproject(arr) {
@@ -478,15 +473,36 @@
         }
 
 
-
         function drawGeometry(data, removable = true) {
 
             console.log('data', data);
-            const { geometry, color, type, fit = true, stroke = false, editCallback } = data
+            const { geometry, color, type, fit = true, stroke = false, editCallback, layer = null } = data
             if (!geometry) return
+
             //leafelt bounds 
-            geometryLayers.forEach(l => l.removable && l.geom.remove())
-            geometryLayers.length = 0
+            geometryLayers
+                .filter(l => l.geom.options.id !== appData.editLayerId)
+                .forEach(l => {
+                    console.log('l', l);
+                    //l.removable && l.geom.remove()
+                    l.geom.setStyle({
+                        fillColor: "gray",
+                        color: "gray",
+                        interactive: false
+                    })
+
+                })
+
+            if (layer) {
+                layer.setStyle({
+                    pmIgnore: false,
+                })
+                L.PM.reInitLayer(layer); // enable Geoman for this special layer
+
+                layer.on('pm:edit', updateCoords);
+                layer.on('pm:dragend', updateCoords);
+                layer.on('pm:rotateend', updateCoords);
+            }
 
             const mapBounds = L.latLngBounds();
             const unpCoords = geometry.map(c => {
@@ -495,65 +511,6 @@
                 return rc.unproject([c.x, c.y])
             })
             fit && map.fitBounds(mapBounds);
-
-            console.log('type', type);
-            console.log('color', color);
-
-
-            if (type === 'marker') {
-                const point = L.circle(unpCoords[0], {
-                    color,
-                    radius: 0.5,
-                    "fillOpacity": 0.5,
-                    "opacity": 0.5
-                }).addTo(map);
-
-                geometryLayers.push({ geom: point, removable })
-                // polygon.pm.enable();
-                point.on('pm:edit', updateCoords);
-                point.on('pm:dragend', updateCoords);
-                point.on('pm:rotateend', updateCoords);
-
-                return point;
-            }
-
-            if (type === 'polygon') {
-                const polygon = L.polygon(unpCoords, {
-
-                    fillColor: color,
-                    weight: stroke ? 3 : 0,
-                    opacity: 1,
-                    color: 'red',  //Outline color
-                    fillOpacity: 0.5
-
-
-                }).addTo(map);
-                geometryLayers.push({ geom: polygon, removable })
-
-                // polygon.pm.enable();
-                polygon.on('pm:edit', updateCoords);
-                polygon.on('pm:dragend', updateCoords);
-                polygon.on('pm:rotateend', updateCoords);
-
-                return polygon;
-            }
-
-            if (type === 'line') {
-                const line = L.polyline(unpCoords, {
-                    color,
-                    "fillOpacity": 1,
-                    "opacity": 1,
-                    "weight": 5
-                }).addTo(map);
-                geometryLayers.push({ geom: line, removable })
-
-                // polygon.pm.enable();
-                line.on('pm:edit', updateCoords);
-                line.on('pm:dragend', updateCoords);
-                line.on('pm:rotateend', updateCoords);
-
-                return line;
-            }
 
             function updateCoords(e) {
                 const coords = getCoordinates(e)
@@ -626,7 +583,7 @@
                                 console.log('info', info);
                                 console.log('result', result);
 
-                                if (tileLayer !== currentMap.tileLayer) {
+                                if (tileLayer !== appData.tileLayer) {
                                     switch (tileLayer) {
                                         case mapTilesNames.BrandenlandsInset:
                                             switchToBrandenlandsInset()
@@ -649,27 +606,12 @@
                                     })
                                 }
 
-                                //await new Promise(resolve => setTimeout(resolve, 500));
-                                // switch (type) {
-                                //     case 'marker':
-                                //         showInfo(info)
-                                //         drawGeometry(result)
-                                //         break;
-                                //     case 'polygon':
-                                //         const polygon = drawGeometry(result)
-                                //         showInfo(info)
-                                //         break;
-                                //     case 'line':
-                                //         const line = drawGeometry(result)
-                                //         showInfo(info)
-                                //         break;
-                                // }
-
                                 const { geometryInput } = generateEditor(result)
                                 drawGeometry({
                                     color, geometry, type, editCallback: (geometry) => {
                                         geometryInput.value = JSON.stringify(geometry)
-                                    }
+                                    },
+                                    layer: null
                                 })
 
                             }
@@ -757,16 +699,111 @@
                     'Content-Type': 'application/json',
                 },
                 noCache: true
-
             })
                 .then(response => response.json())
                 .then(data => {
                     console.log('All items:', data)
+                    appData.data = data
 
                     autocomplete(document.getElementById("myInput"), data);
-
+                    drawAllItems()
                 })
-                .catch(error => console.error('Error:', error));
+        }
+
+        function drawAllItems() {
+
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+            appData
+                .data
+                .filter(geom => {
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
+                    }
+                    else {
+                        return true
+                    }
+                })
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .forEach(d => {
+
+                    console.log('d', d);
+                    const { id, name, info, type, geometry, tileLayer, color } = d
+
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            id,
+                            color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            appData.editLayerId = id
+
+                            const { geometryInput } = generateEditor(d)
+                            drawGeometry({
+                                color, geometry, type, editCallback: (geometry) => {
+                                    geometryInput.value = JSON.stringify(geometry)
+                                },
+                                layer: point
+                            })
+                        })
+                        geometryLayers.push({ geom: point, removable: true })
+                    }
+
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            id,
+                            fillColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            const { geometryInput } = generateEditor(d)
+                            drawGeometry({
+                                color, geometry, type, editCallback: (geometry) => {
+                                    geometryInput.value = JSON.stringify(geometry)
+                                },
+                                layer: polygon
+                            })
+                        })
+                        geometryLayers.push({ geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            id,
+                            color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            const { geometryInput } = generateEditor(d)
+                            drawGeometry({
+                                color, geometry, type, editCallback: (geometry) => {
+                                    geometryInput.value = JSON.stringify(geometry)
+                                },
+                                layer: line
+                            })
+                        })
+                        geometryLayers.push({ geom: line, removable: true })
+                    }
+                })
         }
 
         // POST a new item
@@ -823,7 +860,7 @@
                     info: infoArea.value,
                     type,
                     geometry: JSON.parse(geometryInput.value),
-                    tileLayer: currentMap.tileLayer,
+                    tileLayer: appData.tileLayer,
                     color: selectedColor
                 }
 
@@ -837,6 +874,8 @@
                 editorDiv.innerHTML = ''
 
                 getAllItems()//refetch the new data
+
+                map.pm.disableGlobalEditMode()
             })
 
             const cancelButton = document.createElement("button")
@@ -847,6 +886,10 @@
 
                 layer && layer.remove()
                 geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+                getAllItems()
+
+                map.pm.disableGlobalEditMode()
             })
 
             const deleteButton = document.createElement("button")
@@ -882,6 +925,8 @@
                                 getAllItems()
 
                                 geometryLayers.length = 0
+
+                                map.pm.disableGlobalEditMode()
                             })
                     },
                     cancel: () => {
@@ -913,17 +958,12 @@
                     console.log('_color', _color);
                     console.log('layer', layer);
 
-                    layer && layer.setStyle({ color: _color })
+                    //layer && layer.setStyle({ color: _color })
 
-                    const editableLayer = geometryLayers[0]
+                    const editableLayer = geometryLayers.find(l => l.geom.options.id === appData.editLayerId)
                     editableLayer && editableLayer.geom.setStyle({ color: _color, fillColor: _color })
 
 
-                    // drawGeometry({
-                    //     geometry, type, color: _color, editCallback: (geometry) => {
-                    //         geometryInput.value = JSON.stringify(geometry)
-                    //     }
-                    // })
                     selectedColor = _color
                 })
                 colorContainer.appendChild(button)
@@ -943,64 +983,6 @@
 
             return { editorDiv, container, geometryInput }
         }
-
-
-        // function generateGeometryList(data) {
-
-        //     const container = document.createElement("div")
-        //     data.forEach(d => {
-
-        //         const { id, name, info, type, geometry, tileLayer, color } = d
-        //         const item = document.createElement("div")
-        //         item.className = "list-item"
-        //         item.innerHTML = `${d.id}.  ${d.name}`
-        //         item.addEventListener("click", async () => {
-
-        //             console.log('tileLayer', tileLayer);
-        //             console.log('tileLayer', currentMap.tileLayer);
-
-        //             if (tileLayer !== currentMap.tileLayer) {
-
-        //                 switch (tileLayer) {
-        //                     case mapTilesNames.BrandenlandsInset:
-        //                         switchToBrandenlandsInset()
-        //                         break;
-        //                     case mapTilesNames.IdlewildInset:
-        //                         switchToIdlewildInset()
-        //                         break;
-        //                     case mapTilesNames.main:
-        //                         switchToMain()
-        //                         break;
-        //                 }
-        //                 await new Promise(resolve => {
-        //                     map.once('moveend', () => {
-        //                         resolve()
-        //                     })
-        //                     setTimeout(() => {
-        //                         resolve()
-        //                     }, 2000)
-        //                 })
-        //             }
-        //             const { geometryInput } = generateEditor({
-        //                 id,
-        //                 name,
-        //                 info,
-        //                 type,
-        //                 geometry,
-        //                 tileLayer,
-        //                 color
-        //             })
-        //             drawGeometry({
-        //                 color, geometry, type, editCallback: (geometry) => {
-        //                     geometryInput.value = JSON.stringify(geometry)
-        //                 }
-        //             })
-        //         })
-        //         container.appendChild(item)
-        //     })
-        //     return container
-        // }
-
 
         function modalAlert({ del, cancel }) {
             const modal = document.createElement("div")
@@ -1042,6 +1024,41 @@
         }
 
 
+        buildTypeSelectors()
+
+        function buildTypeSelectors() {
+
+            const types = [
+                { name: 'marker', label: "Location" },
+                { name: 'polygon', label: "Region" },
+                { name: 'line', label: "Path" }
+            ]
+            const container = document.getElementById("selectors")
+            types.forEach(type => {
+
+                const input = document.createElement("input")
+                input.type = "radio"
+                input.name = "type"
+                input.value = type.name
+                input.checked = type.name === 'marker'
+                input.id = type.name
+                input.addEventListener("change", () => {
+                    appData.type = type.name
+                    drawAllItems()
+                })
+
+                const label = document.createElement("label")
+                label.htmlFor = type.name
+                label.innerText = type.label
+
+                const div = document.createElement("div")
+                div.appendChild(input)
+                div.appendChild(label)
+
+                container.appendChild(div)
+            })
+
+        }
     </script>
 
 
