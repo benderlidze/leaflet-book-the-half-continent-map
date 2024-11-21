@@ -223,7 +223,7 @@
     <script>
 
 
-        const apiUrl = 'https://glossarydev.itcraftlab.com/wp-json/glossary-itc/v1/get-glossary-data/';
+        const apiUrl = 'https://serg.one/tool_api/api.php';
 
         const geometryList = document.getElementById("geometry-list")
         const editorDiv = document.getElementById("geometry-editor")
@@ -531,7 +531,6 @@
             var currentFocus;
             /*execute a function when someone writes in the text field:*/
             inp.addEventListener("input", function (e) {
-                console.log('11', arr);
                 var a, b, i, val = this.value;
                 /*close any already open lists of autocompleted values*/
                 closeAllLists();
@@ -546,19 +545,19 @@
                 /*for each item in the array...*/
                 for (i = 0; i < arr.length; i++) {
                     /*check if the item starts with the same letters as the text field value:*/
-                    if (arr[i].title.toUpperCase().includes(val.toUpperCase())) {
+                    if (arr[i].name.toUpperCase().includes(val.toUpperCase())) {
 
-                        const { title, id } = arr[i]
+                        const { name, id } = arr[i]
                         /*create a DIV element for each matching element:*/
                         b = document.createElement("DIV");
 
                         //replace the matching part with bold text
                         //b.innerHTML += name.replace(new RegExp(val, 'gi'), (match) => `<strong>${match}</strong>`)
-                        b.innerHTML += title.replace(new RegExp(val, 'i'), (match) => `<strong>${match}</strong>`);
+                        b.innerHTML += name.replace(new RegExp(val, 'i'), (match) => `<strong>${match}</strong>`);
 
 
                         /*insert a input field that will hold the current array item's value:*/
-                        b.innerHTML += `<input type='hidden' data-name="${title}" value="${id}">`;
+                        b.innerHTML += `<input type='hidden' data-name="${name}" value="${id}">`;
                         /*execute a function when someone clicks on the item value (DIV element):*/
                         b.addEventListener("click", async function (e) {
 
@@ -569,19 +568,12 @@
                             (or any other open lists of autocompleted values:*/
 
                             const result = arr.find(s => s.id == id)
-                            if (result && result.meta.glossary_map_json.length > 1) {
+                            if (result) {
 
-                                const resData = result.meta.glossary_map_json
-                                const resJson = JSON.parse(resData)
+                                inp.value = ''
 
-                                if (!resJson) {
-                                    console.warn('No Data!!!');
-                                    return;
-                                }
+                                const { x, y, color, info, geometry, type, tileLayer = mapTilesNames.main } = result
 
-                                console.log('resJson', resJson);
-
-                                const { x, y, color, info, geometry, type, tileLayer } = resJson
 
                                 selectors.find(s => s.name === type).input.click()
 
@@ -617,11 +609,7 @@
                                 map.fitBounds(mapBounds);
 
                                 emphasizeItem(id)
-
-
                             }
-
-
 
                             closeAllLists();
                         });
@@ -698,11 +686,10 @@
                 noCache: true
             })
                 .then(response => response.json())
-                .then(json => {
-
-                    const { data } = json
+                .then(data => {
 
                     appData.data = data
+
                     autocomplete(document.getElementById("myInput"), data);
                     drawAllItems()
                 })
@@ -727,27 +714,14 @@
             }
         }
 
+
         function drawAllItems() {
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
 
-            const geometryData = []
-            appData.data.forEach(item => {
-                if (item.meta.glossary_map_json.length > 1) {
-
-                    geometryData.push({
-                        id: item.id,
-                        name: item.title,
-                        info: item.content,
-                        ...JSON.parse(item.meta.glossary_map_json)
-                    })
-                }
-            })
-
-            console.log('geometryData', geometryData);
-
-            geometryData
+            appData
+                .data
                 .filter(geom => {
                     if (appData.type && appData.type !== "") {
                         return geom.type === appData.type
@@ -759,12 +733,8 @@
                 .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
                 .forEach(d => {
 
-                    console.log('d', d);
-
                     const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
                     const color = initialColor ?? 'red';
-
-                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
 
                     const unpCoords = geometry.map(c => {
                         return rc.unproject([c.x, c.y])
