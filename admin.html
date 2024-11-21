@@ -182,9 +182,7 @@
             <div id="map"></div>
         </div>
         <div id="right">
-            <div class="autocomplete" style="width:100%;">
-                <input id="myInput" type="text" name="myCountry" placeholder="Search">
-            </div>
+
             <div id="selectors"></div>
             <div id="info"></div>
 
@@ -244,7 +242,13 @@
             type: "marker",
             data: [],
             tileLayer: mapTilesNames.main,
-            editLayerId: null
+            editLayerId: null,
+            geometryInput: null,
+            mainData: {
+                type: "",
+                geometry: "",
+                layer: ""
+            },
             //editMode: false //if edit move disable all interactions till save cancel delete
         }
 
@@ -348,6 +352,9 @@
             // geometryLayers.forEach(l => l.removable && l.geom.remove())
         });
 
+
+        appData.geometryInput = generateEditor(appData.mainData).geometryInput
+
         map.on('pm:create', function (e) {
 
             console.log('e.shape', e.shape);
@@ -369,18 +376,14 @@
                 return { x: Math.abs(y), y: Math.abs(x) }
             })
 
-            const { geometryInput } = generateEditor({
-                name: type,
-                description: 'Polygon description',
-                type: type,
-                geometry: coords,
-                tileLayer: 'Main',
-                layer
-            })
-
             drawGeometry({
-                color: "red", geometry: coords, type, editCallback: (geometry) => {
-                    geometryInput.value = JSON.stringify(geometry)
+                color: "red",
+                geometry: coords,
+                type,
+                editCallback: (geometry) => {
+                    console.log('???', geometry);
+                    appData.mainData.geometry = geometry
+                    updateTextarea()
                 },
                 layer: layer
             })
@@ -388,8 +391,24 @@
             // layer.remove()
 
             map.pm.disableGlobalEditMode()
+
+            appData.mainData.geometry = coords
+            appData.mainData.type = type
+
+            updateTextarea()
         });
 
+        function updateTextarea() {
+
+            const data = {
+                tileLayer: appData.tileLayer,
+                ...appData.mainData
+            }
+
+            console.log('appData.tileLayer', appData.tileLayer);
+            console.log('appData.tileLayer', data);
+            appData.geometryInput.value = JSON.stringify(data, null, 2)
+        }
 
         // ------------- SWITCH MAPS -----------------
         fullMap.addEventListener('click', switchToMain)
@@ -414,6 +433,7 @@
             IdlewildInsetTileLayer.addTo(map)
 
             appData.tileLayer = mapTilesNames.IdlewildInset
+            updateTextarea()
 
             drawAllItems()
         }
@@ -435,6 +455,7 @@
             BrandenlandsInsetTileLayer.addTo(map)
 
             appData.tileLayer = mapTilesNames.BrandenlandsInset
+            updateTextarea()
 
             drawAllItems()
         }
@@ -458,6 +479,7 @@
             geometryLayers.length = 0
 
             appData.tileLayer = mapTilesNames.main
+            updateTextarea()
 
             drawAllItems()
         }
@@ -494,9 +516,12 @@
                 })
 
             if (layer) {
-                layer.setStyle({
-                    pmIgnore: false,
-                })
+                console.log('layer', layer);
+                if (layer.setStyle) {
+                    layer.setStyle({
+                        pmIgnore: false,
+                    })
+                }
                 L.PM.reInitLayer(layer); // enable Geoman for this special layer
 
                 layer.on('pm:edit', updateCoords);
@@ -531,165 +556,6 @@
             return coords
         }
 
-        function autocomplete(inp, arr) {
-            /*the autocomplete function takes two arguments,
-            the text field element and an array of possible autocompleted values:*/
-            var currentFocus;
-            /*execute a function when someone writes in the text field:*/
-            inp.addEventListener("input", function (e) {
-                var a, b, i, val = this.value;
-                /*close any already open lists of autocompleted values*/
-                closeAllLists();
-                if (!val) { return false; }
-                currentFocus = -1;
-                /*create a DIV element that will contain the items (values):*/
-                a = document.createElement("DIV");
-                a.setAttribute("id", this.id + "autocomplete-list");
-                a.setAttribute("class", "autocomplete-items");
-                /*append the DIV element as a child of the autocomplete container:*/
-                this.parentNode.appendChild(a);
-                /*for each item in the array...*/
-                for (i = 0; i < arr.length; i++) {
-                    /*check if the item starts with the same letters as the text field value:*/
-                    if (arr[i].name.toUpperCase().includes(val.toUpperCase())) {
-
-                        const { name, id } = arr[i]
-                        /*create a DIV element for each matching element:*/
-                        b = document.createElement("DIV");
-
-                        //replace the matching part with bold text
-                        //b.innerHTML += name.replace(new RegExp(val, 'gi'), (match) => `<strong>${match}</strong>`)
-                        b.innerHTML += name.replace(new RegExp(val, 'i'), (match) => `<strong>${match}</strong>`);
-
-
-                        /*insert a input field that will hold the current array item's value:*/
-                        b.innerHTML += `<input type='hidden' data-name="${name}" value="${id}">`;
-                        /*execute a function when someone clicks on the item value (DIV element):*/
-                        b.addEventListener("click", async function (e) {
-
-                            const id = this.getElementsByTagName("input")[0].value;
-                            /*insert the value for the autocomplete text field:*/
-                            inp.value = this.getElementsByTagName("input")[0].dataset.name;
-                            /*close the list of autocompleted values,
-                            (or any other open lists of autocompleted values:*/
-
-                            const result = arr.find(s => s.id == id)
-                            if (result) {
-
-                                inp.value = ''
-
-                                const { x, y, color, info, geometry, type, tileLayer = mapTilesNames.main } = result
-                                console.log('type', type);
-                                console.log('info', info);
-                                console.log('result', result);
-
-                                if (tileLayer !== appData.tileLayer) {
-                                    switch (tileLayer) {
-                                        case mapTilesNames.BrandenlandsInset:
-                                            switchToBrandenlandsInset()
-                                            break;
-                                        case mapTilesNames.IdlewildInset:
-                                            switchToIdlewildInset()
-                                            break;
-                                        case mapTilesNames.main:
-                                            switchToMain()
-                                            break;
-                                    }
-
-                                    await new Promise(resolve => {
-                                        map.once('moveend', () => {
-                                            resolve()
-                                        })
-                                        setTimeout(() => {
-                                            resolve()
-                                        }, 2000)
-                                    })
-                                }
-
-                                const { geometryInput } = generateEditor(result)
-                                drawGeometry({
-                                    color, geometry, type, editCallback: (geometry) => {
-                                        geometryInput.value = JSON.stringify(geometry)
-                                    },
-                                    layer: null
-                                })
-
-                            }
-
-                            closeAllLists();
-                        });
-                        a.appendChild(b);
-                    }
-                }
-            });
-            /*execute a function presses a key on the keyboard:*/
-            inp.addEventListener("keydown", function (e) {
-                var x = document.getElementById(this.id + "autocomplete-list");
-                if (x) x = x.getElementsByTagName("div");
-                if (e.keyCode == 40) {
-                    /*If the arrow DOWN key is pressed,
-                    increase the currentFocus variable:*/
-                    currentFocus++;
-                    /*and and make the current item more visible:*/
-                    addActive(x);
-                } else if (e.keyCode == 38) { //up
-                    /*If the arrow UP key is pressed,
-                    decrease the currentFocus variable:*/
-                    currentFocus--;
-                    /*and and make the current item more visible:*/
-                    addActive(x);
-                } else if (e.keyCode == 13) {
-                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
-                    e.preventDefault();
-                    if (currentFocus > -1) {
-                        /*and simulate a click on the "active" item:*/
-                        if (x) x[currentFocus].click();
-                    }
-                }
-            });
-
-            function addActive(x) {
-                /*a function to classify an item as "active":*/
-                if (!x) return false;
-                /*start by removing the "active" class on all items:*/
-                removeActive(x);
-                if (currentFocus >= x.length) currentFocus = 0;
-                if (currentFocus < 0) currentFocus = (x.length - 1);
-                /*add class "autocomplete-active":*/
-                x[currentFocus].classList.add("autocomplete-active");
-            }
-            function removeActive(x) {
-                /*a function to remove the "active" class from all autocomplete items:*/
-                for (var i = 0; i < x.length; i++) {
-                    x[i].classList.remove("autocomplete-active");
-                }
-            }
-            function closeAllLists(elmnt) {
-                /*close all autocomplete lists in the document,
-                except the one passed as an argument:*/
-                var x = document.getElementsByClassName("autocomplete-items");
-                for (var i = 0; i < x.length; i++) {
-                    if (elmnt != x[i] && elmnt != inp) {
-                        x[i].parentNode.removeChild(x[i]);
-                    }
-                }
-            }
-            /*execute a function when someone clicks in the document:*/
-            document.addEventListener("click", function (e) {
-                closeAllLists(e.target);
-            });
-        }
-
-
-        // function rebuildAutocomplete() {
-        //     fetch(apiUrl)
-        //         .then(res => res.json())
-        //         .then(data => {
-        //             console.log('data', data);
-        //             autocomplete(document.getElementById("myInput"), data);
-        //         })
-        // }
-        // rebuildAutocomplete()
 
         // GET all items
         function getAllItems() {
@@ -747,6 +613,7 @@
 
                         point.addEventListener("click", () => {
                             appData.editLayerId = id
+                            console.log('type === marker',);
 
                             const { geometryInput } = generateEditor(d)
                             drawGeometry({
@@ -760,6 +627,7 @@
                     }
 
                     if (type === 'polygon') {
+
                         const polygon = L.polygon(unpCoords, {
                             id,
                             fillColor: color,
@@ -769,15 +637,19 @@
                             fillOpacity: 0.5,
                             pmIgnore: true
                         }).addTo(map);
+
                         polygon.addEventListener("click", () => {
                             appData.editLayerId = id
-                            const { geometryInput } = generateEditor(d)
-                            drawGeometry({
-                                color, geometry, type, editCallback: (geometry) => {
-                                    geometryInput.value = JSON.stringify(geometry)
-                                },
-                                layer: polygon
-                            })
+
+                            console.log('type === polygon',);
+
+                            // const { geometryInput } = generateEditor(d)
+                            // drawGeometry({
+                            //     color, geometry, type, editCallback: (geometry) => {
+                            //         geometryInput.value = JSON.stringify(geometry)
+                            //     },
+                            //     layer: polygon
+                            // })
                         })
                         geometryLayers.push({ geom: polygon, removable: true })
                     }
@@ -793,13 +665,14 @@
                         }).addTo(map);
                         line.addEventListener("click", () => {
                             appData.editLayerId = id
-                            const { geometryInput } = generateEditor(d)
-                            drawGeometry({
-                                color, geometry, type, editCallback: (geometry) => {
-                                    geometryInput.value = JSON.stringify(geometry)
-                                },
-                                layer: line
-                            })
+                            console.log('type === line',);
+                            // const { geometryInput } = generateEditor(d)
+                            // drawGeometry({
+                            //     color, geometry, type, editCallback: (geometry) => {
+                            //         geometryInput.value = JSON.stringify(geometry)
+                            //     },
+                            //     layer: line
+                            // })
                         })
                         geometryLayers.push({ geom: line, removable: true })
                     }
@@ -834,115 +707,25 @@
             name,
             info,
             geometry,
-            tileLayer,
             layer,
             color
         }) {
-            let selectedColor = color
+
+            const infoData = {
+                id,
+                type,
+                geometry,
+                color
+            }
+
+            console.log('infoData', infoData);
+
             const container = document.createElement("div")
             container.className = "container-column"
 
-            const nameInput = document.createElement("input")
-            nameInput.placeholder = "Name"
-            nameInput.value = name
-
-            const infoArea = document.createElement("textarea")
-            infoArea.placeholder = "Description"
-            infoArea.value = info
-
-            const saveButton = document.createElement("button")
-            saveButton.innerText = "Save"
-            saveButton.style.flex = 1
-            saveButton.addEventListener("click", async () => {
-                const item = {
-                    id,
-                    name: nameInput.value,
-                    info: infoArea.value,
-                    type,
-                    geometry: JSON.parse(geometryInput.value),
-                    tileLayer: appData.tileLayer,
-                    color: selectedColor
-                }
-
-                await createItem(item)
-
-                //remove old geomerty
-                layer && layer.remove()
-                geometryLayers.forEach(l => l.removable && l.geom.remove())
-                geometryLayers.length = 0
-
-                editorDiv.innerHTML = ''
-
-                getAllItems()//refetch the new data
-
-                map.pm.disableGlobalEditMode()
-            })
-
-            const cancelButton = document.createElement("button")
-            cancelButton.innerText = "Cancel"
-            cancelButton.style.flex = 1
-            cancelButton.addEventListener("click", () => {
-                editorDiv.innerHTML = ''
-
-                layer && layer.remove()
-                geometryLayers.forEach(l => l.removable && l.geom.remove())
-
-                getAllItems()
-
-                map.pm.disableGlobalEditMode()
-            })
-
-            const deleteButton = document.createElement("button")
-            deleteButton.innerHTML = `
-                <svg width="25px" height="25px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20.5001 6H3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M9.5 11L10 16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M14.5 11L14 16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M6.5 6C6.55588 6 6.58382 6 6.60915 5.99936C7.43259 5.97849 8.15902 5.45491 8.43922 4.68032C8.44784 4.65649 8.45667 4.62999 8.47434 4.57697L8.57143 4.28571C8.65431 4.03708 8.69575 3.91276 8.75071 3.8072C8.97001 3.38607 9.37574 3.09364 9.84461 3.01877C9.96213 3 10.0932 3 10.3553 3H13.6447C13.9068 3 14.0379 3 14.1554 3.01877C14.6243 3.09364 15.03 3.38607 15.2493 3.8072C15.3043 3.91276 15.3457 4.03708 15.4286 4.28571L15.5257 4.57697C15.5433 4.62992 15.5522 4.65651 15.5608 4.68032C15.841 5.45491 16.5674 5.97849 17.3909 5.99936C17.4162 6 17.4441 6 17.5 6" stroke="white" stroke-width="1.5"/>
-                <path d="M18.3735 15.3991C18.1965 18.054 18.108 19.3815 17.243 20.1907C16.378 21 15.0476 21 12.3868 21H11.6134C8.9526 21 7.6222 21 6.75719 20.1907C5.89218 19.3815 5.80368 18.054 5.62669 15.3991L5.16675 8.5M18.8334 8.5L18.6334 11.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>`
-            deleteButton.style.width = "50px"
-            deleteButton.style.padding = "5px"
-            deleteButton.style.backgroundColor = "red"
-
-            deleteButton.addEventListener("click", () => {
-
-                modalAlert({
-                    del: () => {
-                        editorDiv.innerHTML = ''
-                        layer && layer.remove()
-                        geometryLayers.forEach(l => l.removable && l.geom.remove())
-                        fetch(apiUrl, {
-                            method: "POST",
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ id, action: 'DELETE' }),
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                console.log('data', data);
-                                getAllItems()
-
-                                geometryLayers.length = 0
-
-                                map.pm.disableGlobalEditMode()
-                            })
-                    },
-                    cancel: () => {
-                        console.log('cancel');
-                        geometryLayers.length = 0
-                    }
-                })
-            })
-
-            const buttonsContainer = document.createElement("div")
-            buttonsContainer.style = "display: flex; gap: 5px; flex-direction: row;"
-            buttonsContainer.appendChild(saveButton)
-            buttonsContainer.appendChild(cancelButton)
-            buttonsContainer.appendChild(deleteButton)
-
-
+            const geometryInput = document.createElement("textarea")
+            geometryInput.style = "width: 100%; height: 400px;"
+            geometryInput.placeholder = "Description"
 
             const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'black']
             const colorContainer = document.createElement("div")
@@ -958,28 +741,27 @@
                     console.log('_color', _color);
                     console.log('layer', layer);
 
-                    //layer && layer.setStyle({ color: _color })
-
                     const editableLayer = geometryLayers.find(l => l.geom.options.id === appData.editLayerId)
                     editableLayer && editableLayer.geom.setStyle({ color: _color, fillColor: _color })
 
+                    infoData.color = _color
+                    appData.mainData.color = _color
+                    updateTextarea()
 
-                    selectedColor = _color
+
                 })
                 colorContainer.appendChild(button)
             })
 
-            const geometryInput = document.createElement("textarea")
-            geometryInput.value = JSON.stringify(geometry)
-
-            container.appendChild(nameInput)
-            container.appendChild(infoArea)
-            container.appendChild(geometryInput)
             container.appendChild(colorContainer)
-            container.appendChild(buttonsContainer)
+            container.appendChild(geometryInput)
 
             editorDiv.innerHTML = ''
             editorDiv.appendChild(container)
+
+            geometryInput.value = JSON.stringify(infoData, null, 2)
+
+            appData.mainData = infoData;
 
             return { editorDiv, container, geometryInput }
         }
@@ -1023,46 +805,7 @@
             document.body.appendChild(modal)
         }
 
-
-        buildTypeSelectors()
-
-        function buildTypeSelectors() {
-
-            const types = [
-                { name: 'marker', label: "Location" },
-                { name: 'polygon', label: "Region" },
-                { name: 'line', label: "Path" }
-            ]
-            const container = document.getElementById("selectors")
-            types.forEach(type => {
-
-                const input = document.createElement("input")
-                input.type = "radio"
-                input.name = "type"
-                input.value = type.name
-                input.checked = type.name === 'marker'
-                input.id = type.name
-                input.addEventListener("change", () => {
-                    appData.type = type.name
-                    drawAllItems()
-                })
-
-                const label = document.createElement("label")
-                label.htmlFor = type.name
-                label.innerText = type.label
-
-                const div = document.createElement("div")
-                div.appendChild(input)
-                div.appendChild(label)
-
-                container.appendChild(div)
-            })
-
-        }
     </script>
-
-
-
 </body>
 
 </html>
