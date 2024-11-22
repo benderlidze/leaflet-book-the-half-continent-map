@@ -222,9 +222,9 @@
 
     <script>
 
-
         const apiUrl = 'https://glossarydev.itcraftlab.com/wp-json/glossary-itc/v1/get-glossary-data/';
 
+        const rightPanel = document.getElementById("right")
         const geometryList = document.getElementById("geometry-list")
         const editorDiv = document.getElementById("geometry-editor")
 
@@ -257,7 +257,8 @@
             type: "marker",
             data: [],
             tileLayer: mapTilesNames.main,
-            editLayerId: null
+            editLayerId: null,
+            selectors: [],
             //editMode: false //if edit move disable all interactions till save cancel delete
         }
 
@@ -524,7 +525,7 @@
 
         function autocomplete(inp, arr) {
 
-            const selectors = buildTypeSelectors()
+
 
             /*the autocomplete function takes two arguments,
             the text field element and an array of possible autocompleted values:*/
@@ -569,58 +570,7 @@
                             (or any other open lists of autocompleted values:*/
 
                             const result = arr.find(s => s.id == id)
-                            if (result && result.meta.glossary_map_json.length > 1) {
-
-                                const resData = result.meta.glossary_map_json
-                                const resJson = JSON.parse(resData)
-
-                                if (!resJson) {
-                                    console.warn('No Data!!!');
-                                    return;
-                                }
-
-                                console.log('resJson', resJson);
-
-                                const { x, y, color, info, geometry, type, tileLayer } = resJson
-
-                                selectors.find(s => s.name === type).input.click()
-
-                                if (tileLayer !== appData.tileLayer) {
-                                    switch (tileLayer) {
-                                        case mapTilesNames.BrandenlandsInset:
-                                            switchToBrandenlandsInset()
-                                            break;
-                                        case mapTilesNames.IdlewildInset:
-                                            switchToIdlewildInset()
-                                            break;
-                                        case mapTilesNames.main:
-                                            switchToMain()
-                                            break;
-                                    }
-
-                                    await new Promise(resolve => {
-                                        map.once('moveend', () => {
-                                            resolve()
-                                        })
-                                        setTimeout(() => {
-                                            resolve()
-                                        }, 2000)
-                                    })
-                                }
-
-                                const { geometryInput } = generateEditor(result)
-                                const mapBounds = L.latLngBounds();
-                                const unpCoords = geometry.map(c => {
-                                    mapBounds.extend(rc.unproject([c.x, c.y]))
-                                    return rc.unproject([c.x, c.y])
-                                })
-                                map.fitBounds(mapBounds);
-
-                                emphasizeItem(id)
-
-
-                            }
-
+                            result && showItemOnMap(result)
 
 
                             closeAllLists();
@@ -687,10 +637,66 @@
             });
         }
 
+        async function showItemOnMap(result) {
+
+            if (result && result.meta.glossary_map_json.length > 1) {
+                const resData = result.meta.glossary_map_json
+                const resJson = JSON.parse(resData)
+                if (!resJson) {
+                    console.warn('No Data!!!');
+                    return;
+                }
+                const { x, y, color, info, geometry, type, tileLayer } = resJson
+
+                if (tileLayer !== appData.tileLayer) {
+                    switch (tileLayer) {
+                        case mapTilesNames.BrandenlandsInset:
+                            switchToBrandenlandsInset()
+                            break;
+                        case mapTilesNames.IdlewildInset:
+                            switchToIdlewildInset()
+                            break;
+                        case mapTilesNames.main:
+                            switchToMain()
+                            break;
+                    }
+
+                    await new Promise(resolve => {
+                        map.once('moveend', () => {
+                            resolve()
+                        })
+                        setTimeout(() => {
+                            resolve()
+                        }, 2000)
+                    })
+                }
+
+                const mapBounds = L.latLngBounds();
+                const unpCoords = geometry.map(c => {
+                    mapBounds.extend(rc.unproject([c.x, c.y]))
+                    return rc.unproject([c.x, c.y])
+                })
+                map.fitBounds(mapBounds);
+
+                appData.selectors.find(s => s.name === type).input.click()
+            }
+        }
 
         // GET all items
         function getAllItems() {
-            fetch(apiUrl, {
+
+            //if url option id is present then get single item
+            let idParam = ''
+
+            const id = new URL(window.location.href).searchParams.get("id")
+
+            if (id && id !== "") {
+                rightPanel.style.display = "none"
+                map.invalidateSize()
+                let idParam = `?id=${id}`
+            }
+
+            fetch(apiUrl + idParam, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -699,17 +705,22 @@
             })
                 .then(response => response.json())
                 .then(json => {
-
                     const { data } = json
-
                     appData.data = data
+
+                    appData.selectors = buildTypeSelectors()
                     autocomplete(document.getElementById("myInput"), data);
                     drawAllItems()
+
+                    if (id && id !== "") {
+                        const resJson = data[0]
+                        showItemOnMap(resJson)
+                    }
                 })
         }
 
+        //* Highlights a specific layer on the map and dims all others.
         function emphasizeItem(id) {
-
             const layer = geometryLayers.find(l => +l.geom.options.id === +id)
             if (layer) {
                 geometryLayers
@@ -784,7 +795,6 @@
 
                         point.addEventListener("click", () => {
                             appData.editLayerId = id
-                            const { geometryInput } = generateEditor(d)
 
                             emphasizeItem(id)
 
@@ -805,7 +815,6 @@
                         }).addTo(map);
                         polygon.addEventListener("click", () => {
                             appData.editLayerId = id
-                            const { geometryInput } = generateEditor(d)
                             emphasizeItem(id)
                         })
                         geometryLayers.push({ id, geom: polygon, removable: true })
@@ -823,7 +832,6 @@
                         }).addTo(map);
                         line.addEventListener("click", () => {
                             appData.editLayerId = id
-                            const { geometryInput } = generateEditor(d)
                             emphasizeItem(id)
                         })
                         geometryLayers.push({ id, geom: line, removable: true })
@@ -831,31 +839,31 @@
                 })
         }
 
-        function generateEditor({
-            id,
-            type,
-            name,
-            info,
-        }) {
-            const container = document.createElement("div")
-            container.className = "container-column"
+        // function generateEditor({
+        //     id,
+        //     type,
+        //     name,
+        //     info,
+        // }) {
+        //     const container = document.createElement("div")
+        //     container.className = "container-column"
 
-            const nameInput = document.createElement("div")
-            nameInput.style.fontWeight = "bold"
-            nameInput.innerHTML = name
+        //     const nameInput = document.createElement("div")
+        //     nameInput.style.fontWeight = "bold"
+        //     nameInput.innerHTML = name
 
-            const infoArea = document.createElement("div")
-            infoArea.innerHTML = info
+        //     const infoArea = document.createElement("div")
+        //     infoArea.innerHTML = info
 
 
-            container.appendChild(nameInput)
-            container.appendChild(infoArea)
+        //     container.appendChild(nameInput)
+        //     container.appendChild(infoArea)
 
-            editorDiv.innerHTML = ''
-            editorDiv.appendChild(container)
+        //     editorDiv.innerHTML = ''
+        //     editorDiv.appendChild(container)
 
-            return { editorDiv, container }
-        }
+        //     return { editorDiv, container }
+        // }
 
         function modalAlert({ del, cancel }) {
             const modal = document.createElement("div")
