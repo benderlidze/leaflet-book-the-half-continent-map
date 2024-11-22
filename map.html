@@ -639,6 +639,8 @@
 
         async function showItemOnMap(result) {
 
+            console.log('result', result);
+            
             if (result && result.meta.glossary_map_json.length > 1) {
                 const resData = result.meta.glossary_map_json
                 const resJson = JSON.parse(resData)
@@ -689,11 +691,12 @@
             let idParam = ''
 
             const id = new URL(window.location.href).searchParams.get("id")
+            console.log('id', id);
 
             if (id && id !== "") {
                 rightPanel.style.display = "none"
                 map.invalidateSize()
-                let idParam = `?id=${id}`
+                idParam = `?id=${id}`
             }
 
             fetch(apiUrl + idParam, {
