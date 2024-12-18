@@ -640,7 +640,7 @@
         async function showItemOnMap(result) {
 
             console.log('result', result);
-            
+
             if (result && result.meta.glossary_map_json.length > 1) {
                 const resData = result.meta.glossary_map_json
                 const resJson = JSON.parse(resData)
@@ -678,9 +678,13 @@
                     mapBounds.extend(rc.unproject([c.x, c.y]))
                     return rc.unproject([c.x, c.y])
                 })
+
                 map.fitBounds(mapBounds);
 
                 appData.selectors.find(s => s.name === type).input.click()
+
+                drawItem(result.id)
+
             }
         }
 
@@ -741,8 +745,110 @@
             }
         }
 
-        function drawAllItems() {
+        function drawItem(objectId) {
 
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const geometryData = []
+            appData.data.forEach(item => {
+                if (item.meta.glossary_map_json.length > 1) {
+
+                    geometryData.push({
+                        id: item.id,
+                        name: item.title,
+                        info: item.content,
+                        ...JSON.parse(item.meta.glossary_map_json)
+                    })
+                }
+            })
+
+            console.log('drawItem', objectId, geometryData);
+
+            geometryData
+                .filter(geom => {
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
+                    }
+                    else {
+                        return true
+                    }
+                })
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .filter(geom => geom.id === objectId)
+                .forEach(d => {
+
+                    console.log('d', d);
+
+                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const color = initialColor ?? 'red';
+
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
+
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            id,
+                            color,
+                            originalColor: color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            appData.editLayerId = id
+
+                            emphasizeItem(id)
+
+                        })
+                        geometryLayers.push({ id, geom: point, removable: true })
+                    }
+
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            id,
+                            fillColor: color,
+                            originalColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            id,
+                            color,
+                            originalColor: color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: line, removable: true })
+                    }
+                })
+        }
+
+        function drawAllItems() {
+            return;
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
 
