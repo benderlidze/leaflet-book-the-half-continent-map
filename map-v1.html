@@ -50,7 +50,7 @@
             box-sizing: border-box;
             flex-direction: column;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            z-index: 100;
+            z-index: 10000;
         }
 
         #info {
@@ -187,21 +187,36 @@
 <body>
 
     <div id="main">
-
-        <div id="container">
-            <div id="full-map">Full Map</div>
-            <!-- <div id="idlewild-inset">Idlewild </div>
-            <div id="brandenlands-inset">Brandenlands </div> -->
+        <div id="left">
+            <div id="container">
+                <div id="full-map">Full Map</div>
+                <!-- <div id="idlewild-inset">Idlewild </div>
+                <div id="brandenlands-inset">Brandenlands </div> -->
+            </div>
+            <div id="map"></div>
         </div>
-        <div id="map"></div>
-
-        <div class="autocomplete" style="z-index:1000;top:10px; right:10px;position:absolute;width:300px;">
-            <input id="myInput" type="text" name="myCountry" placeholder="Search">
-        </div>
-
-        <div id="right" style="display: none;">
+        <div id="right">
+            <div class="autocomplete" style="width:100%;">
+                <input id="myInput" type="text" name="myCountry" placeholder="Search">
+            </div>
             <div id="selectors"></div>
             <div id="info"></div>
+
+            <div class="container-column">
+                <!-- <button id="create-pin">Create pin</button>
+                <button id="create-line">Create line</button>
+                <button id="create-polygon">Create polygon</button> -->
+                <div id="geometry-editor"></div>
+            </div>
+
+            <div class="container-column" id="geometry-list"></div>
+
+            <!-- <div id="button-container">
+                <button id="generate">Genrate</button>
+                <button id="clear">Clear</button>
+            </div> -->
+
+            <div id="coords"></div>
         </div>
     </div>
 
@@ -209,8 +224,9 @@
 
         const apiUrl = 'https://noblebeast.com/wp-json/glossary-itc/v1/get-glossary-data/';
 
+        const rightPanel = document.getElementById("right")
         const geometryList = document.getElementById("geometry-list")
-        
+        const editorDiv = document.getElementById("geometry-editor")
 
         const coordsDiv = document.getElementById("coords")
         const info = document.getElementById("info")
@@ -487,6 +503,8 @@
                 input.addEventListener("change", () => {
                     appData.type = type.name
                     drawAllItems()
+
+                    editorDiv.innerHTML = '' //clear  info
                 })
 
                 const label = document.createElement("label")
@@ -680,6 +698,7 @@
             console.log('id', id);
 
             if (id && id !== "") {
+                rightPanel.style.display = "none"
                 map.invalidateSize()
                 idParam = `id=${id}`
             }
