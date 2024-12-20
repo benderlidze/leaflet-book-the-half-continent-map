@@ -700,10 +700,10 @@
             if (id && id !== "") {
                 rightPanel.style.display = "none"
                 map.invalidateSize()
-                idParam = `?id=${id}`
+                idParam = `id=${id}`
             }
 
-            fetch(apiUrl + idParam, {
+            fetch(apiUrl + "?" + idParam + `&time=${new Date().getTime()}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
