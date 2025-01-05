@@ -685,7 +685,7 @@
                 idParam = `id=${id}`
             }
 
-            fetch(apiUrl + "?" + idParam + `&time=${new Date().getTime()}`, {
+            fetch(apiUrl + `?time=${new Date().getTime()}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -702,7 +702,7 @@
                     drawAllItems()
 
                     if (id && id !== "") {
-                        const resJson = data[0]
+                        const resJson = data.find(d => d.id == id)
                         showItemOnMap(resJson)
                     }
                 })
