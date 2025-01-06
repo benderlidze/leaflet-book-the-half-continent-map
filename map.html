@@ -668,6 +668,10 @@
 
                 drawItem(result.id)
 
+                window.parent.postMessage({
+                    itemId: result.id,
+                }, "*");
+
             }
         }
 
