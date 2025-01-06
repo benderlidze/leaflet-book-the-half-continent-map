@@ -630,6 +630,8 @@
                 }, "*");
             }
 
+            drawItem(null)//clear prev geometry
+
             if (result && result.meta.glossary_map_json.length > 1) {
                 const resData = result.meta.glossary_map_json
                 const resJson = JSON.parse(resData)
@@ -738,8 +740,11 @@
 
         function drawItem(objectId) {
 
+            console.log('objectId', objectId);
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
+
+            if (objectId === null || !objectId) return;
 
             const geometryData = []
             appData.data.forEach(item => {
