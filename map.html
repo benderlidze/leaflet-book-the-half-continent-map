@@ -624,6 +624,12 @@
 
             console.log('result', result);
 
+            if (result && result.id) {
+                window.parent.postMessage({
+                    itemId: result.id,
+                }, "*");
+            }
+
             if (result && result.meta.glossary_map_json.length > 1) {
                 const resData = result.meta.glossary_map_json
                 const resJson = JSON.parse(resData)
@@ -656,23 +662,22 @@
                     })
                 }
 
-                const mapBounds = L.latLngBounds();
-                const unpCoords = geometry.map(c => {
-                    mapBounds.extend(rc.unproject([c.x, c.y]))
-                    return rc.unproject([c.x, c.y])
-                })
+                if (geometry.length > 0) {
+                    const mapBounds = L.latLngBounds();
+                    const unpCoords = geometry.map(c => {
+                        mapBounds.extend(rc.unproject([c.x, c.y]))
+                        return rc.unproject([c.x, c.y])
+                    })
 
-                map.fitBounds(mapBounds);
+                    map.fitBounds(mapBounds);
 
-                appData.selectors.find(s => s.name === type).input.click()
+                    appData.selectors.find(s => s.name === type).input.click()
 
-                drawItem(result.id)
-
-                window.parent.postMessage({
-                    itemId: result.id,
-                }, "*");
-
+                    drawItem(result.id)
+                }
             }
+
+
         }
 
         // GET all items
