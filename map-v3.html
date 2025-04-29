@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Map</title>
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="./js/leaflet-rastercoords.js"></script>
+
+
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.17.0/dist/leaflet-geoman.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6"></script>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #main {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+        }
+
+        #left {
+            flex: 1;
+        }
+
+        #right {
+            width: 300px;
+            display: flex;
+            box-sizing: border-box;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        #info {
+            padding: 10px;
+        }
+
+        .autocomplete {
+            /*the container must be positioned relative:*/
+            position: relative;
+            display: inline-block;
+        }
+
+        .autocomplete>input {
+            border: 1px solid transparent;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .autocomplete>input[type=text] {
+            background-color: #f1f1f1;
+            width: 100%;
+        }
+
+        .autocomplete>input[type=submit] {
+            background-color: DodgerBlue;
+            color: #fff;
+        }
+
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            /*position the autocomplete items to be the same width as the container:*/
+            top: 100%;
+            left: 0;
+            right: 0;
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #d4d4d4;
+        }
+
+        .autocomplete-items div:hover {
+            /*when hovering an item:*/
+            background-color: #e9e9e9;
+        }
+
+        .autocomplete-active {
+            /*when navigating through the items using the arrow keys:*/
+            background-color: DodgerBlue !important;
+            color: #ffffff;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            z-index: 1000;
+            gap: 5px;
+        }
+
+        #full-map,
+        #idlewild-inset,
+        #brandenlands-inset {
+            position: absolute;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            flex-direction: column;
+            text-align: center;
+
+            border: 1px solid #535353;
+        }
+
+        #button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .container-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .list-item {
+            padding: 5px;
+            cursor: pointer;
+            border: 1px solid #535353;
+        }
+
+        #selectors {
+            border: 1px solid gray;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-radius: 10px;
+            margin: 10px;
+            width: fit-content;
+        }
+
+
+
+
+
+
+        /* Accordion Styles */
+        #geo-accordion {
+            position: absolute;
+            z-index: 1000;
+            top: 55px;
+            right: 10px;
+            width: 320px;
+            font-family: sans-serif;
+        }
+
+        .accordion-header {
+            background: #f5f5f5;
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: 2px;
+            font-weight: bold;
+            user-select: none;
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid black;
+        }
+
+        .accordion-arrow {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid #d32f2f;
+            transition: transform 0.3s;
+            margin-right: 8px;
+            transform: rotate(-90deg);
+        }
+
+        .accordion-panel.open~.accordion-header .accordion-arrow,
+        .accordion-header.open .accordion-arrow {
+            transform: rotate(0deg);
+        }
+
+        .accordion-panel {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.25s linear;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .accordion-panel.open {
+            max-height: 500px;
+            transition: max-height 0.35s linear;
+        }
+
+        .checkbox-grid {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .checkbox-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .custom-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            gap: 8px;
+            font-size: 15px;
+            user-select: none;
+        }
+
+        .custom-checkbox input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkbox-mark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #b0b0b0;
+            border-radius: 3px;
+            background: #fff;
+            display: inline-block;
+            transition: background 0.2s;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .custom-checkbox input[type="checkbox"]:checked+.checkbox-mark {
+            background: #d32f2f;
+            border-color: #d32f2f;
+        }
+
+        .custom-checkbox input[type="checkbox"]:checked+.checkbox-mark::after {
+            content: "";
+            display: block;
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 10px;
+            height: 10px;
+            background: #d32f2f;
+        }
+
+        .custom-checkbox input[type="checkbox"]:not(:checked)+.checkbox-mark {
+            background: #fff;
+            border-color: #b0b0b0;
+        }
+
+        .custom-checkbox input[type="checkbox"]:not(:checked)+.checkbox-mark::after {
+            content: "";
+            display: block;
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main">
+
+        <div id="container">
+            <div id="full-map">Full Map</div>
+            <!-- <div id="idlewild-inset">Idlewild </div>
+            <div id="brandenlands-inset">Brandenlands </div> -->
+        </div>
+        <div id="map"></div>
+
+        <div class="autocomplete" style="z-index:1000;top:10px; right:10px;position:absolute;width:320px;">
+            <input id="myInput" style="border:1px solid black; border-radius: 5px;" type="text" name="myCountry"
+                placeholder="Search">
+        </div>
+
+        <div id="geo-accordion">
+            <div class="accordion-header">
+                <span class="accordion-arrow"></span>
+                Geographical Type Selection
+            </div>
+            <div class="accordion-panel">
+                <div class="checkbox-grid" id="geo-checkbox-grid">
+                    <!-- JS will populate columns here -->
+                </div>
+            </div>
+        </div>
+
+
+        <div id="right" style="display: none;">
+            <div id="selectors"></div>
+            <div id="info"></div>
+        </div>
+
+
+
+    </div>
+
+    <script>
+
+        const apiUrl = 'https://noblebeast.com/wp-json/glossary-itc/v1/get-glossary-data/';
+
+        const geometryList = document.getElementById("geometry-list")
+
+
+        const coordsDiv = document.getElementById("coords")
+        const info = document.getElementById("info")
+        const fullMap = document.getElementById("full-map")
+
+        const createPolygon = document.getElementById("create-polygon")
+
+        // const idlewildInset = document.getElementById("idlewild-inset")
+        // const brandenlandsInset = document.getElementById("brandenlands-inset")
+
+        const generateButton = document.getElementById("generate")
+        const clearButton = document.getElementById("clear")
+
+        const geometryLayers = []
+        const tempCoords = []
+
+        const img = {
+            x: 23622,  // original width of image 
+            y: 18315   // original height of image
+        }
+        const mapTilesNames = {
+            main: "Main",
+            BrandenlandsInset: "BrandenlandsInset",
+            IdlewildInset: "IdlewildInset"
+        }
+
+        const appData = {
+            type: "marker",
+            data: [],
+            tileLayer: mapTilesNames.main,
+            editLayerId: null,
+            selectors: [],
+            //editMode: false //if edit move disable all interactions till save cancel delete
+        }
+
+        const BrandenlandsInset = {
+            geometry: [
+                { x: 11718, y: 9902 },
+                { x: 11718, y: 10761 },
+                { x: 11070, y: 10761 },
+                { x: 11070, y: 9902 },
+            ],
+            img: { x: 2506, y: 2715 },
+            tiles: "tiles_brandenlands/{z}/{x}/{y}.png"
+        }
+
+        const IdlewildInset = {
+            geometry: [
+                { x: 11494, y: 9902 },
+                { x: 11494, y: 9486 },
+                { x: 13058, y: 9486 },
+                { x: 13048, y: 10296 },
+                { x: 11718, y: 10320 },
+                { x: 11718, y: 9902 }
+            ],
+            img: { x: 4961, y: 3307 },
+            tiles: "tiles_idlewild/{z}/{x}/{y}.png"
+        }
+
+        // create the map
+        var map = L.map('map', {
+            crs: L.CRS.Simple,
+            maxZoom: 7,
+            minZoom: 1,
+            zoomControl: false,
+            preferCanvas: true,
+            noWrap: true,
+            edgeBufferTiles: 20,
+            maxBounds: mapBounds,
+            maxBoundsViscosity: 1.0
+        })
+
+        var rc = new L.RasterCoords(map, [img.x, img.y])
+        var mapBounds = new L.LatLngBounds(
+            rc.unproject([1, img.y], 8),
+            rc.unproject([img.x, 1], 8)
+        );
+        map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
+        map.setZoom(2)
+
+        const tileLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+            noWrap: true,
+            preferCanvas: true,
+            bounds: mapBounds
+        }).addTo(map)
+
+        const BrandenlandsInsetTileLayer = L.tileLayer(BrandenlandsInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
+        const IdlewildInsetTileLayer = L.tileLayer(IdlewildInset.tiles, {
+            noWrap: true,
+            preferCanvas: true,
+        })
+
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+
+        map.setMaxBounds(mapBounds);
+
+
+        getAllItems()
+
+        // ------------- SWITCH MAPS -----------------
+        fullMap.addEventListener('click', switchToMain)
+        // idlewildInset.addEventListener('click', switchToIdlewildInset)
+        // brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
+
+        const BrandenlandsInsetPolygon = drawGeometry({
+            geometry: BrandenlandsInset.geometry,
+            color: "#e2d5e9",
+            type: "polygon",
+            fit: false,
+            stroke: "red"
+        }, false)
+        BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
+
+        const IdlewildInsetPolygon = drawGeometry({
+            geometry: IdlewildInset.geometry,
+            color: "#c9e2d4",
+            type: "polygon",
+            fit: false,
+            stroke: "red"
+        }, false)
+        IdlewildInsetPolygon.on('click', switchToIdlewildInset)
+
+        function switchToIdlewildInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const { img } = IdlewildInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(5)
+            map.fitBounds(mapBounds);
+            tileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
+            BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
+
+            IdlewildInsetTileLayer.addTo(map)
+
+
+            appData.tileLayer = mapTilesNames.IdlewildInset
+
+            drawAllItems()
+        }
+        function switchToBrandenlandsInset() {
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const { img, tiles } = BrandenlandsInset;
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 5),
+                rc.unproject([img.x, 1], 5)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(4)
+            map.fitBounds(mapBounds);
+            tileLayer.remove()
+            IdlewildInsetTileLayer.remove()
+            IdlewildInsetPolygon.remove()
+            BrandenlandsInsetPolygon.remove()
+
+            BrandenlandsInsetTileLayer.addTo(map)
+
+            appData.tileLayer = mapTilesNames.BrandenlandsInset
+
+            drawAllItems()
+        }
+        function switchToMain() {
+
+            tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
+            const rc = new L.RasterCoords(map, [img.x, img.y])
+            const mapBounds = new L.LatLngBounds(
+                rc.unproject([1, img.y], 8),
+                rc.unproject([img.x, 1], 8)
+            );
+            map.setMaxBounds(mapBounds);
+            map.setMaxZoom(7)
+            map.setZoom(2)
+
+            tileLayer.addTo(map)
+
+            IdlewildInsetTileLayer.remove()
+            BrandenlandsInsetTileLayer.remove()
+
+            IdlewildInsetPolygon.addTo(map)
+            BrandenlandsInsetPolygon.addTo(map)
+
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            appData.tileLayer = mapTilesNames.main
+
+            drawAllItems()
+        }
+
+        function unproject(arr) {
+            const { lat, lng } = rc.unproject(arr)
+            return [lng, lat]
+        }
+
+        function showInfo(data) {
+            info.innerHTML = data
+        }
+
+
+        function drawGeometry(data, removable = true) {
+
+            const { geometry, color, type, fit = true, stroke = false } = data
+            if (!geometry) return
+            //leafelt bounds 
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+
+            const unpCoords = geometry.map(c => {
+                mapBounds.extend(rc.unproject([c.x, c.y]))
+                return rc.unproject([c.x, c.y])
+            })
+
+            if (type === 'polygon') {
+                const polygon = L.polygon(unpCoords, {
+
+                    fillColor: color,
+                    originalColor: color,
+                    weight: stroke ? 3 : 0,
+                    opacity: 1,
+                    color: 'red',
+                    fillOpacity: 0.5
+
+                }).addTo(map);
+                geometryLayers.push({ geom: polygon, removable })
+                return polygon;
+            }
+
+        }
+
+        function getCoordinates(event) {
+            const layer = event.layer;
+            const shapes = layer.toGeoJSON();
+            const points = turf.coordAll(shapes)
+            const coords = points.map(p => {
+                const c = rc.project(p);
+                const { x, y } = c
+                return { x: Math.abs(y), y: Math.abs(x) }
+            })
+
+            return coords
+        }
+
+
+
+        function buildTypeSelectors() {
+
+            const types = [
+                { name: 'none', label: "Clear" },
+                { name: 'marker', label: "Location" },
+                { name: 'polygon', label: "Region" },
+                { name: 'line', label: "Path" }
+            ]
+            const container = document.getElementById("selectors")
+
+            return types.map(type => {
+                const input = document.createElement("input")
+                input.type = "radio"
+                input.name = "type"
+                input.value = type.name
+                input.checked = type.name === 'marker'
+                input.id = type.name
+                input.addEventListener("change", () => {
+                    appData.type = type.name
+                    drawAllItems()
+                })
+
+                const label = document.createElement("label")
+                label.htmlFor = type.name
+                label.innerText = type.label
+
+                const div = document.createElement("div")
+                div.appendChild(input)
+                div.appendChild(label)
+
+                container.appendChild(div)
+
+                return { name: type.name, input }
+            })
+
+        }
+
+
+        function autocomplete(inp, arr) {
+
+
+
+            /*the autocomplete function takes two arguments,
+            the text field element and an array of possible autocompleted values:*/
+            var currentFocus;
+            /*execute a function when someone writes in the text field:*/
+            inp.addEventListener("input", function (e) {
+                console.log('11', arr);
+                var a, b, i, val = this.value;
+                /*close any already open lists of autocompleted values*/
+                closeAllLists();
+                if (!val) { return false; }
+                currentFocus = -1;
+                /*create a DIV element that will contain the items (values):*/
+                a = document.createElement("DIV");
+                a.setAttribute("id", this.id + "autocomplete-list");
+                a.setAttribute("class", "autocomplete-items");
+                /*append the DIV element as a child of the autocomplete container:*/
+                this.parentNode.appendChild(a);
+                /*for each item in the array...*/
+                for (i = 0; i < arr.length; i++) {
+                    /*check if the item starts with the same letters as the text field value:*/
+                    if (arr[i].title.toUpperCase().includes(val.toUpperCase())) {
+
+                        const { title, id } = arr[i]
+                        /*create a DIV element for each matching element:*/
+                        b = document.createElement("DIV");
+
+                        //replace the matching part with bold text
+                        //b.innerHTML += name.replace(new RegExp(val, 'gi'), (match) => `<strong>${match}</strong>`)
+                        b.innerHTML += title.replace(new RegExp(val, 'i'), (match) => `<strong>${match}</strong>`);
+
+
+                        /*insert a input field that will hold the current array item's value:*/
+                        b.innerHTML += `<input type='hidden' data-name="${title}" value="${id}">`;
+                        /*execute a function when someone clicks on the item value (DIV element):*/
+                        b.addEventListener("click", async function (e) {
+
+                            const id = this.getElementsByTagName("input")[0].value;
+                            /*insert the value for the autocomplete text field:*/
+                            inp.value = this.getElementsByTagName("input")[0].dataset.name;
+                            /*close the list of autocompleted values,
+                            (or any other open lists of autocompleted values:*/
+
+                            const result = arr.find(s => s.id == id)
+                            result && showItemOnMap(result)
+
+
+                            closeAllLists();
+                        });
+                        a.appendChild(b);
+                    }
+                }
+            });
+            /*execute a function presses a key on the keyboard:*/
+            inp.addEventListener("keydown", function (e) {
+                var x = document.getElementById(this.id + "autocomplete-list");
+                if (x) x = x.getElementsByTagName("div");
+                if (e.keyCode == 40) {
+                    /*If the arrow DOWN key is pressed,
+                    increase the currentFocus variable:*/
+                    currentFocus++;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    /*If the arrow UP key is pressed,
+                    decrease the currentFocus variable:*/
+                    currentFocus--;
+                    /*and and make the current item more visible:*/
+                    addActive(x);
+                } else if (e.keyCode == 13) {
+                    /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        /*and simulate a click on the "active" item:*/
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+
+            function addActive(x) {
+                /*a function to classify an item as "active":*/
+                if (!x) return false;
+                /*start by removing the "active" class on all items:*/
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                /*add class "autocomplete-active":*/
+                x[currentFocus].classList.add("autocomplete-active");
+            }
+            function removeActive(x) {
+                /*a function to remove the "active" class from all autocomplete items:*/
+                for (var i = 0; i < x.length; i++) {
+                    x[i].classList.remove("autocomplete-active");
+                }
+            }
+            function closeAllLists(elmnt) {
+                /*close all autocomplete lists in the document,
+                except the one passed as an argument:*/
+                var x = document.getElementsByClassName("autocomplete-items");
+                for (var i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != inp) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+            /*execute a function when someone clicks in the document:*/
+            document.addEventListener("click", function (e) {
+                closeAllLists(e.target);
+            });
+        }
+
+        async function showItemOnMap(result) {
+
+            console.log('result', result);
+
+            if (result && result.id) {
+                window.parent.postMessage({
+                    itemId: result.id,
+                }, "*");
+            }
+
+            drawItem(null)//clear prev geometry
+
+            if (result && result.meta.glossary_map_json.length > 1) {
+                const resData = result.meta.glossary_map_json
+                const resJson = JSON.parse(resData)
+                if (!resJson) {
+                    console.warn('No Data!!!');
+                    return;
+                }
+                const { x, y, color, info, geometry, type, tileLayer } = resJson
+
+                if (tileLayer !== appData.tileLayer) {
+                    switch (tileLayer) {
+                        case mapTilesNames.BrandenlandsInset:
+                            switchToBrandenlandsInset()
+                            break;
+                        case mapTilesNames.IdlewildInset:
+                            switchToIdlewildInset()
+                            break;
+                        case mapTilesNames.main:
+                            switchToMain()
+                            break;
+                    }
+
+                    await new Promise(resolve => {
+                        map.once('moveend', () => {
+                            resolve()
+                        })
+                        setTimeout(() => {
+                            resolve()
+                        }, 2000)
+                    })
+                }
+
+                if (geometry.length > 0) {
+                    const mapBounds = L.latLngBounds();
+                    const unpCoords = geometry.map(c => {
+                        mapBounds.extend(rc.unproject([c.x, c.y]))
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    map.fitBounds(mapBounds);
+
+                    appData.selectors.find(s => s.name === type).input.click()
+
+                    drawItem(result.id)
+                }
+            }
+
+
+        }
+
+        // GET all items
+        function getAllItems() {
+
+            //if url option id is present then get single item
+            let idParam = ''
+
+            const id = new URL(window.location.href).searchParams.get("id")
+            console.log('id', id);
+
+            if (id && id !== "") {
+                map.invalidateSize()
+                idParam = `id=${id}`
+            }
+
+            fetch(apiUrl + `?time=${new Date().getTime()}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                noCache: true
+            })
+                .then(response => response.json())
+                .then(json => {
+                    const { data } = json
+                    appData.data = data
+
+                    appData.selectors = buildTypeSelectors()
+                    autocomplete(document.getElementById("myInput"), data);
+                    drawAllItems()
+
+                    if (id && id !== "") {
+                        const resJson = data.find(d => d.id == id)
+                        showItemOnMap(resJson)
+                    }
+                })
+        }
+
+        //* Highlights a specific layer on the map and dims all others.
+        function emphasizeItem(id) {
+            const layer = geometryLayers.find(l => +l.geom.options.id === +id)
+            if (layer) {
+                geometryLayers
+                    .filter(l => +l.geom.options.id !== +id && l.geom.options.id)
+                    .forEach(l => {
+                        l.geom.setStyle({
+                            fillColor: "gray",
+                            color: "gray",
+                        })
+                    })
+                layer.geom.setStyle({
+                    fillColor: layer.geom.options.originalColor || "red",
+                    color: layer.geom.options.originalColor || "red",
+                })
+            }
+        }
+
+        function drawItem(objectId) {
+
+            console.log('objectId', objectId);
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            if (objectId === null || !objectId) return;
+
+            const geometryData = []
+            appData.data.forEach(item => {
+                if (item.meta.glossary_map_json.length > 1) {
+
+                    geometryData.push({
+                        id: item.id,
+                        name: item.title,
+                        info: item.content,
+                        ...JSON.parse(item.meta.glossary_map_json)
+                    })
+                }
+            })
+
+            console.log('drawItem', objectId, geometryData);
+
+            geometryData
+                .filter(geom => {
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
+                    }
+                    else {
+                        return true
+                    }
+                })
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .filter(geom => geom.id === objectId)
+                .forEach(d => {
+
+                    console.log('d', d);
+
+                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const color = initialColor ?? 'red';
+
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
+
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            id,
+                            color,
+                            originalColor: color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            appData.editLayerId = id
+
+                            emphasizeItem(id)
+
+                        })
+                        geometryLayers.push({ id, geom: point, removable: true })
+                    }
+
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            id,
+                            fillColor: color,
+                            originalColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            id,
+                            color,
+                            originalColor: color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: line, removable: true })
+                    }
+                })
+        }
+
+        function drawAllItems() {
+            return;
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const geometryData = []
+            appData.data.forEach(item => {
+                if (item.meta.glossary_map_json.length > 1) {
+
+                    geometryData.push({
+                        id: item.id,
+                        name: item.title,
+                        info: item.content,
+                        ...JSON.parse(item.meta.glossary_map_json)
+                    })
+                }
+            })
+
+            console.log('geometryData', geometryData);
+
+            geometryData
+                .filter(geom => {
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
+                    }
+                    else {
+                        return true
+                    }
+                })
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .forEach(d => {
+
+                    console.log('d', d);
+
+                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const color = initialColor ?? 'red';
+
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
+
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            id,
+                            color,
+                            originalColor: color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            appData.editLayerId = id
+
+                            emphasizeItem(id)
+
+                        })
+                        geometryLayers.push({ id, geom: point, removable: true })
+                    }
+
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            id,
+                            fillColor: color,
+                            originalColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            id,
+                            color,
+                            originalColor: color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: line, removable: true })
+                    }
+                })
+        }
+
+        // function generateEditor({
+        //     id,
+        //     type,
+        //     name,
+        //     info,
+        // }) {
+        //     const container = document.createElement("div")
+        //     container.className = "container-column"
+
+        //     const nameInput = document.createElement("div")
+        //     nameInput.style.fontWeight = "bold"
+        //     nameInput.innerHTML = name
+
+        //     const infoArea = document.createElement("div")
+        //     infoArea.innerHTML = info
+
+
+        //     container.appendChild(nameInput)
+        //     container.appendChild(infoArea)
+
+        //     editorDiv.innerHTML = ''
+        //     editorDiv.appendChild(container)
+
+        //     return { editorDiv, container }
+        // }
+
+        function modalAlert({ del, cancel }) {
+            const modal = document.createElement("div")
+            modal.style = "z-index:1000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;"
+
+            const container = document.createElement("div")
+            container.style = "display:flex; gap:10px; flex-direction:column;  background-color: white; padding: 20px; border-radius: 5px;gap"
+
+            const text = document.createElement("div")
+            text.innerText = "Are you sure you want to delete?"
+            container.appendChild(text)
+
+            const buttonContainer = document.createElement("div")
+            buttonContainer.style = "display:flex; gap:10px; flex-direction:row; justify-content: center;"
+
+            const okButton = document.createElement("button")
+            okButton.innerText = "Delete"
+            okButton.style.flex = 1
+            okButton.addEventListener("click", () => {
+                del && del()
+                modal.remove()
+            })
+
+            const cancelButton = document.createElement("button")
+            cancelButton.innerText = "Cancel"
+            cancelButton.style.flex = 1
+            cancelButton.addEventListener("click", () => {
+                cancel && cancel()
+                modal.remove()
+            })
+
+            buttonContainer.appendChild(okButton)
+            buttonContainer.appendChild(cancelButton)
+            container.appendChild(buttonContainer)
+
+            modal.appendChild(container)
+
+            document.body.appendChild(modal)
+        }
+
+
+
+
+        const header = document.querySelector('#geo-accordion .accordion-header');
+        const panel = document.querySelector('#geo-accordion .accordion-panel');
+        const arrow = header.querySelector('.accordion-arrow');
+        header.addEventListener('click', () => {
+            panel.classList.toggle('open');
+            header.classList.toggle('open');
+        });
+
+        // Checkbox items
+        const geoItems = [
+            "Regions",
+            "Rivers",
+            "Roads",
+            "Major Cities",
+            "Minor Cities",
+            "Settlements",
+            "Battlegrounds",
+            "Fortresses",
+            "Cot Houses",
+            "River Gates",
+            "Ocean Regions",
+            "Port Cities"
+        ];
+
+        // Track selected items
+        let selectedGeoItems = [];
+
+        // Split into two columns
+        const col1 = geoItems.slice(0, 6);
+        const col2 = geoItems.slice(6);
+
+        function createCheckbox(labelText) {
+            const label = document.createElement('label');
+            label.className = 'custom-checkbox';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+
+            // Update selectedGeoItems on change
+            input.addEventListener('change', function () {
+                if (this.checked) {
+                    if (!selectedGeoItems.includes(labelText)) {
+                        selectedGeoItems.push(labelText);
+                    }
+                } else {
+                    selectedGeoItems = selectedGeoItems.filter(item => item !== labelText);
+                }
+                // Optionally, you can log or use selectedGeoItems here
+                // console.log(selectedGeoItems);
+            });
+
+            const span = document.createElement('span');
+            span.className = 'checkbox-mark';
+
+            label.appendChild(input);
+            label.appendChild(span);
+            label.appendChild(document.createTextNode(labelText));
+            return label;
+        }
+
+        const grid = document.getElementById('geo-checkbox-grid');
+        grid.innerHTML = ''; // Clear if any
+
+        [col1, col2].forEach(colItems => {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'checkbox-col';
+            colItems.forEach(item => {
+                colDiv.appendChild(createCheckbox(item));
+            });
+            grid.appendChild(colDiv);
+        });
+    </script>
+
+
+
+</body>
+
+</html>

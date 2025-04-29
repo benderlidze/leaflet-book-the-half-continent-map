@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* Accordion Styles */
+        #geo-accordion {
+            position: absolute;
+            z-index: 1000;
+            top: 70px;
+            right: 10px;
+            width: 320px;
+            font-family: sans-serif;
+        }
+
+        .accordion-header {
+            background: #f5f5f5;
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: 6px 6px 0 0;
+            font-weight: bold;
+            user-select: none;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accordion-arrow {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 12px solid #d32f2f;
+            transition: transform 0.3s;
+            margin-right: 8px;
+            transform: rotate(-90deg);
+        }
+
+        .accordion-panel.open~.accordion-header .accordion-arrow,
+        .accordion-header.open .accordion-arrow {
+            transform: rotate(0deg);
+        }
+
+        .accordion-panel {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.25s linear;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .accordion-panel.open {
+            max-height: 500px;
+            transition: max-height 0.35s linear;
+        }
+
+        .checkbox-grid {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .checkbox-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .custom-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            gap: 8px;
+            font-size: 15px;
+            user-select: none;
+        }
+
+        .custom-checkbox input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkbox-mark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #b0b0b0;
+            border-radius: 3px;
+            background: #fff;
+            display: inline-block;
+            transition: background 0.2s;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .custom-checkbox input[type="checkbox"]:checked+.checkbox-mark {
+            background: #d32f2f;
+            border-color: #d32f2f;
+        }
+
+        .custom-checkbox input[type="checkbox"]:checked+.checkbox-mark::after {
+            content: "";
+            display: block;
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 10px;
+            height: 10px;
+            background: #d32f2f;
+        }
+
+        .custom-checkbox input[type="checkbox"]:not(:checked)+.checkbox-mark {
+            background: #fff;
+            border-color: #b0b0b0;
+        }
+
+        .custom-checkbox input[type="checkbox"]:not(:checked)+.checkbox-mark::after {
+            content: "";
+            display: block;
+            position: absolute;
+            left: 3px;
+            top: 3px;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="geo-accordion">
+        <div class="accordion-header">
+            <span class="accordion-arrow"></span>
+            Geographical Type Selection
+        </div>
+        <div class="accordion-panel">
+            <div class="checkbox-grid" id="geo-checkbox-grid">
+                <!-- JS will populate columns here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Accordion open/close logic
+        const header = document.querySelector('#geo-accordion .accordion-header');
+        const panel = document.querySelector('#geo-accordion .accordion-panel');
+        const arrow = header.querySelector('.accordion-arrow');
+        header.addEventListener('click', () => {
+            panel.classList.toggle('open');
+            header.classList.toggle('open');
+        });
+
+        // Checkbox items
+        const geoItems = [
+            "Regions",
+            "Rivers",
+            "Roads",
+            "Major Cities",
+            "Minor Cities",
+            "Settlements",
+            "Battlegrounds",
+            "Fortresses",
+            "Cot Houses",
+            "River Gates",
+            "Ocean Regions",
+            "Port Cities"
+        ];
+
+        // Track selected items
+        let selectedGeoItems = [];
+
+        // Split into two columns
+        const col1 = geoItems.slice(0, 6);
+        const col2 = geoItems.slice(6);
+
+        function createCheckbox(labelText) {
+            const label = document.createElement('label');
+            label.className = 'custom-checkbox';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+
+            // Update selectedGeoItems on change
+            input.addEventListener('change', function () {
+                if (this.checked) {
+                    if (!selectedGeoItems.includes(labelText)) {
+                        selectedGeoItems.push(labelText);
+                    }
+                } else {
+                    selectedGeoItems = selectedGeoItems.filter(item => item !== labelText);
+                }
+                // Optionally, you can log or use selectedGeoItems here
+                // console.log(selectedGeoItems);
+            });
+
+            const span = document.createElement('span');
+            span.className = 'checkbox-mark';
+
+            label.appendChild(input);
+            label.appendChild(span);
+            label.appendChild(document.createTextNode(labelText));
+            return label;
+        }
+
+        const grid = document.getElementById('geo-checkbox-grid');
+        grid.innerHTML = ''; // Clear if any
+
+        [col1, col2].forEach(colItems => {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'checkbox-col';
+            colItems.forEach(item => {
+                colDiv.appendChild(createCheckbox(item));
+            });
+            grid.appendChild(colDiv);
+        });
+    </script>
+
+</body>
+
+</html>
