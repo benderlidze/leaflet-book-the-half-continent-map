@@ -358,7 +358,6 @@
 
         const geometryList = document.getElementById("geometry-list")
 
-
         const coordsDiv = document.getElementById("coords")
         const info = document.getElementById("info")
         const fullMap = document.getElementById("full-map")
@@ -811,13 +810,12 @@
                 }
 
                 if (geometry.length > 0) {
-                    const mapBounds = L.latLngBounds();
-                    const unpCoords = geometry.map(c => {
-                        mapBounds.extend(rc.unproject([c.x, c.y]))
-                        return rc.unproject([c.x, c.y])
-                    })
-
-                    map.fitBounds(mapBounds);
+                    // const mapBounds = L.latLngBounds();
+                    // const unpCoords = geometry.map(c => {
+                    //     mapBounds.extend(rc.unproject([c.x, c.y]))
+                    //     return rc.unproject([c.x, c.y])
+                    // })
+                    // map.fitBounds(mapBounds);
 
                     appData.selectors.find(s => s.name === type).input.click()
 
@@ -887,6 +885,7 @@
         function drawItem(objectId) {
 
             console.log('objectId', objectId);
+
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
 
@@ -900,12 +899,21 @@
                         id: item.id,
                         name: item.title,
                         info: item.content,
+                        featured_image: item.featured_image,
                         ...JSON.parse(item.meta.glossary_map_json)
                     })
                 }
             })
 
             console.log('drawItem', objectId, geometryData);
+
+            // const mapBounds = L.latLngBounds();
+            // const unpCoords = geometry.map(c => {
+            //     mapBounds.extend(rc.unproject([c.x, c.y]))
+            //     return rc.unproject([c.x, c.y])
+            // })
+            // map.fitBounds(mapBounds);
+
 
             geometryData
                 .filter(geom => {
@@ -920,16 +928,25 @@
                 .filter(geom => geom.id === objectId)
                 .forEach(d => {
 
-                    console.log('d', d);
 
-                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const { id, name, info, type, geometry, tileLayer, color: initialColor, featured_image } = d;
                     const color = initialColor ?? 'red';
 
-                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
+                    console.log('d', d);
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry, featured_image);
+
+                    if (featured_image && featured_image != "") {
+                        const overlay = displayImageOverlay(featured_image)
+                        geometryLayers.push({ id, geom: overlay, removable: true })
+                        return;
+                    }
+
+                    console.log('!!!!!!!!!!!!!!!!!!',);
 
                     const unpCoords = geometry.map(c => {
                         return rc.unproject([c.x, c.y])
                     })
+
 
                     if (type === 'marker') {
 
@@ -987,6 +1004,28 @@
                         geometryLayers.push({ id, geom: line, removable: true })
                     }
                 })
+
+            // Create bounds to fit the current item
+            if (geometryLayers.length > 0) {
+                const mapBounds = L.latLngBounds();
+
+                geometryLayers.forEach(layer => {
+                    mapBounds.extend(layer.geom.getBounds())
+                });
+
+
+                const padding = [50, 50];
+
+                // Fit the map to these bounds with animation
+                if (!mapBounds.isValid()) return;
+                map.fitBounds(mapBounds, {
+                    padding: padding,
+                    animate: true,
+                    duration: 0.5
+                });
+            }
+
+
         }
 
         function drawAllItems() {
@@ -1023,10 +1062,10 @@
 
                     console.log('d', d);
 
-                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const { id, name, featured_image, info, type, geometry, tileLayer, color: initialColor } = d;
                     const color = initialColor ?? 'red';
 
-                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry, featured_image);
 
                     const unpCoords = geometry.map(c => {
                         return rc.unproject([c.x, c.y])
@@ -1229,6 +1268,58 @@
             });
             grid.appendChild(colDiv);
         });
+
+
+
+
+        function displayImageOverlay(imageUrl) {
+
+            console.log('imageUrl!!!!!!!!!!!!!!!!', imageUrl);
+
+            //https://noblebeast.com/wp-content/uploads/2025/01/Stivenrot_x-18001_y-8834.png
+
+            console.log('imageUrl!!!!!!!!!!!!!!!!', imageUrl);
+
+            // Extract filename from URL
+            const filename = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+            // Extract values using regex
+            const match = filename.match(/_x-(\d+)_y-(\d+)_w-(\d+)_h-(\d+)/);
+
+            if (!match) {
+                console.error("Could not parse coordinates from image URL:", imageUrl);
+                return;
+            }
+
+            const [, xStr, yStr, widthStr, heightStr] = match;
+            const x = parseInt(xStr, 10);
+            const y = parseInt(yStr, 10);
+            const width = parseInt(widthStr, 10);
+            const height = parseInt(heightStr, 10);
+
+            if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) {
+                console.error("Parsed coordinates are not valid numbers:", { x, y, width, height });
+                return;
+            }
+
+            // Unproject corners for Leaflet
+            const overlayTopLeft = rc.unproject([x, y]);
+            const overlayBottomRight = rc.unproject([x + width, y + height]);
+            const overlayBounds = L.latLngBounds(overlayTopLeft, overlayBottomRight);
+
+            // Create the overlay
+            const imageOverlay = L.imageOverlay(
+                "overlays/Stivenrot_x-18001_y-8834.png",
+                overlayBounds,
+                { opacity: 1 }
+            );
+
+
+            imageOverlay.addTo(map);
+            imageOverlay.bringToBack()
+
+            return imageOverlay
+
+        }
     </script>
 
 
