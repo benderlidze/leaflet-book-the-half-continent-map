@@ -389,6 +389,7 @@
             tileLayer: mapTilesNames.main,
             editLayerId: null,
             selectors: [],
+            overlays: [],
             //editMode: false //if edit move disable all interactions till save cancel delete
         }
 
@@ -1244,6 +1245,8 @@
                 } else {
                     selectedGeoItems = selectedGeoItems.filter(item => item !== labelText);
                 }
+
+                console.log('labelText', labelText);
                 // Optionally, you can log or use selectedGeoItems here
                 // console.log(selectedGeoItems);
             });
@@ -1268,6 +1271,20 @@
             });
             grid.appendChild(colDiv);
         });
+
+        loadTagImagesApi()
+
+        function loadTagImagesApi() {
+            fetch("https://noblebeast.com/wp-json/glossary-itc/v1/get-glossary-thumbnails")
+                .then(response => response.json())
+                .then(({ data }) => {
+                    appData.overlays = data
+                    console.log('data', data);
+                })
+                .catch(error => {
+                    console.error("Error fetching image URLs:", error);
+                });
+        }
 
 
 
