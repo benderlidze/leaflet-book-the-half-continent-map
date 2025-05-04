@@ -391,6 +391,7 @@
             selectors: [],
             overlays: [],
             selectedTypes: [],
+            imageOverlays: []
             //editMode: false //if edit move disable all interactions till save cancel delete
         }
 
@@ -1239,11 +1240,11 @@
             // Update selectedGeoItems on change
             input.addEventListener('change', function () {
                 if (this.checked) {
-                    if (!appData.selectedTypes.includes(itemObj.name)) {
-                        appData.selectedTypes.push(itemObj.name);
+                    if (!appData.selectedTypes.includes(itemObj.tagName)) {
+                        appData.selectedTypes.push(itemObj.tagName);
                     }
                 } else {
-                    appData.selectedTypes = appData.selectedTypes.filter(item => item !== itemObj.name);
+                    appData.selectedTypes = appData.selectedTypes.filter(item => item !== itemObj.tagName);
                 }
 
                 console.log('labelText', itemObj);
@@ -1291,23 +1292,23 @@
 
         function rebuildOverlays() {
 
+            // Clear existing overlays
+            appData.imageOverlays.forEach(overlay => {
+                overlay.imageOverlay.remove()
+            })
 
             appData.overlays.forEach(overlay => {
-                const { id, name, tags } = overlay
+                const { id, name, tags, featured_image } = overlay
                 const isChecked = appData.selectedTypes.some(type => tags.map(v => v.toLowerCase()).includes(type.toLowerCase()))
-                console.log('isChecked', isChecked);
+                console.log('overlay', overlay);
+                if (isChecked) {
+                    displayImageOverlay(featured_image, tags)
+                }
             })
 
         }
 
-
-
-
         function displayImageOverlay(imageUrl) {
-
-            console.log('imageUrl!!!!!!!!!!!!!!!!', imageUrl);
-
-            //https://noblebeast.com/wp-content/uploads/2025/01/Stivenrot_x-18001_y-8834.png
 
             console.log('imageUrl!!!!!!!!!!!!!!!!', imageUrl);
 
@@ -1339,7 +1340,7 @@
 
             // Create the overlay
             const imageOverlay = L.imageOverlay(
-                "overlays/Stivenrot_x-18001_y-8834.png",
+                imageUrl,
                 overlayBounds,
                 { opacity: 1 }
             );
@@ -1347,6 +1348,8 @@
 
             imageOverlay.addTo(map);
             imageOverlay.bringToBack()
+
+            appData.imageOverlays.push({ imageOverlay })
 
             return imageOverlay
 
