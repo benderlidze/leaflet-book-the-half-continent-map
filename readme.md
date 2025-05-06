@@ -1,0 +1,1 @@
+gdal2tiles.py -z 0-5  full-overlay.png  tiles_rivers  -p raster --xyz

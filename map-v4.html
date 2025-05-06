@@ -1211,7 +1211,7 @@
         // Checkbox items
         const geoItems = [
             { name: "Regions", tagName: "region" },
-            { name: "Rivers", tagName: "river" },
+            { name: "Rivers", tagName: "river", tileLayer: "tiles_rivers" },
             { name: "Roads", tagName: "road" },
             { name: "Major Cities", tagName: "major-cities" },
             { name: "Minor Cities", tagName: "minor-cities" },
@@ -1239,6 +1239,45 @@
 
             // Update selectedGeoItems on change
             input.addEventListener('change', function () {
+
+                if (itemObj && itemObj.tileLayer) {
+                    // Handle special tile layers
+                    if (this.checked && itemObj.tileLayer) {
+                        // Create the tile layer if it doesn't exist
+                        const tileLayer = L.tileLayer(itemObj.tileLayer + '/{z}/{x}/{y}.png', {
+                            noWrap: true,
+                            preferCanvas: true,
+                            bounds: mapBounds,
+                            opacity: 0.8,
+                            maxNativeZoom: 4,
+                            maxZoom: 7
+                        }).addTo(map);
+
+                        // Store reference to remove later
+                        appData.imageOverlays.push({
+                            imageOverlay: tileLayer,
+                            type: 'tileLayer',
+                            tagName: itemObj.tagName
+                        });
+                    } else if (!this.checked && itemObj.tileLayer) {
+                        // Remove the tile layer when unchecked
+                        const layersToRemove = appData.imageOverlays.filter(
+                            overlay => overlay.type === 'tileLayer' && overlay.tagName === itemObj.tagName
+                        );
+
+                        layersToRemove.forEach(layer => {
+                            layer.imageOverlay.remove();
+                        });
+
+                        // Filter out removed layers
+                        appData.imageOverlays = appData.imageOverlays.filter(
+                            overlay => !(overlay.type === 'tileLayer' && overlay.tagName === itemObj.tagName)
+                        );
+                    }
+                    return
+                }
+
+
                 if (this.checked) {
                     if (!appData.selectedTypes.includes(itemObj.tagName)) {
                         appData.selectedTypes.push(itemObj.tagName);
@@ -1303,7 +1342,7 @@
             appData.overlays.forEach(overlay => {
                 const { id, name, tags, featured_image } = overlay
                 const isChecked = appData.selectedTypes.some(type => tags.map(v => v.toLowerCase()).includes(type.toLowerCase()))
-                console.log('overlay', overlay);
+                // console.log('overlay', overlay);
                 if (isChecked) {
                     displayImageOverlay(featured_image, tags)
                 }
@@ -1312,8 +1351,6 @@
         }
 
         function displayImageOverlay(imageUrl) {
-
-            console.log('imageUrl!!!!!!!!!!!!!!!!', imageUrl);
 
             // Extract filename from URL
             const filename = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
