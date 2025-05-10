@@ -411,6 +411,22 @@
 
     <script>
 
+        // Checkbox items
+        const geoItems = [
+            { name: "Regions", tagName: "Region" },
+            { name: "Rivers", tagName: "river", tileLayer: "tiles_rivers" },
+            { name: "Roads", tagName: "road" },
+            { name: "Major Cities", tagName: "major-cities" },
+            { name: "Minor Cities", tagName: "minor-cities" },
+            { name: "Settlements", tagName: "settlements" },
+            { name: "Battlegrounds", tagName: "battlegrounds" },
+            { name: "Fortresses", tagName: "fortresses" },
+            { name: "Cot Houses", tagName: "cot-houses" },
+            { name: "River Gates", tagName: "river-gates" },
+            { name: "Ocean Regions", tagName: "ocean-regions" },
+            { name: "Port Cities", tagName: "port-cities" }
+        ];
+
         const apiUrl = 'https://noblebeast.com/wp-json/glossary-itc/v1/get-glossary-data/';
 
         const geometryList = document.getElementById("geometry-list")
@@ -1092,12 +1108,76 @@
         }
 
 
-        function drawAllGeometry(geometryData) {
+        function drawAllGeometry() {
+
+            console.log('appData.', appData.selectedTypes);
+
+            const geometryData = []
+            const tilesLayers = []
+
+            appData.selectedTypes.forEach(tagName => {
+
+                const tileLayerName = geoItems.find(i => i.tagName.toLocaleLowerCase() === tagName).tileLayer || ""
+
+                if (tileLayerName !== "") {
+                    console.log('NEXT',);
+                    tilesLayers.push(tileLayerName)
+                    return;
+                }
+
+                appData.data.filter(item => {
+                    return item.tags.some(item => item.includes(tagName)) &&
+                        item.meta.glossary_map_json.type !== ""
+                }).forEach(item => {
+                    const geo = item.meta.glossary_map_json
+                    //get layer type name - tiles or geometry from geoItems by tagName
+
+                    if (geo.type !== "") {
+                        geometryData.push({
+                            id: item.id,
+                            name: item.title,
+                            info: item.content,
+                            tags: item.tags,
+                            tags_: tagName,
+                            ...item.meta.glossary_map_json
+                        })
+                    }
+                })
+            })
+
+            console.log('geometryData', geometryData);
+            console.log('tilesLayers', tilesLayers);
+
+            appData.imageOverlays.forEach(layer => {
+                layer.imageOverlay.remove();
+            })
+
+            if (tilesLayers.length > 0) {
+                tilesLayers.forEach(layer => {
+                    const tileLayer = L.tileLayer(layer + '/{z}/{x}/{y}.png', {
+                        noWrap: true,
+                        preferCanvas: true,
+                        bounds: mapBounds,
+                        opacity: 0.8,
+                        maxNativeZoom: 4,
+                        maxZoom: 7
+                    }).addTo(map);
+
+                    // Store reference to remove later
+                    appData.imageOverlays.push({
+                        imageOverlay: tileLayer,
+                        type: 'tileLayer',
+                        tagName: layer
+                    });
+                })
+            }
+
+
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
 
-            console.log('geometryData', geometryData);
+
 
             geometryData
                 .filter(geom => {
@@ -1353,21 +1433,6 @@
             header.classList.toggle('open');
         });
 
-        // Checkbox items
-        const geoItems = [
-            { name: "Regions", tagName: "Region" },
-            { name: "Rivers", tagName: "river", tileLayer: "tiles_rivers" },
-            { name: "Roads", tagName: "road" },
-            { name: "Major Cities", tagName: "major-cities" },
-            { name: "Minor Cities", tagName: "minor-cities" },
-            { name: "Settlements", tagName: "settlements" },
-            { name: "Battlegrounds", tagName: "battlegrounds" },
-            { name: "Fortresses", tagName: "fortresses" },
-            { name: "Cot Houses", tagName: "cot-houses" },
-            { name: "River Gates", tagName: "river-gates" },
-            { name: "Ocean Regions", tagName: "ocean-regions" },
-            { name: "Port Cities", tagName: "port-cities" }
-        ];
 
         // Split into two columns
         const col1 = geoItems.slice(0, 6);
@@ -1383,78 +1448,15 @@
 
             // Update selectedGeoItems on change
             input.addEventListener('change', function () {
-
-                console.log('change');
-                if (itemObj && itemObj.tileLayer) {
-                    // Handle special tile layers
-                    if (this.checked && itemObj.tileLayer) {
-                        // Create the tile layer if it doesn't exist
-                        const tileLayer = L.tileLayer(itemObj.tileLayer + '/{z}/{x}/{y}.png', {
-                            noWrap: true,
-                            preferCanvas: true,
-                            bounds: mapBounds,
-                            opacity: 0.8,
-                            maxNativeZoom: 4,
-                            maxZoom: 7
-                        }).addTo(map);
-
-                        // Store reference to remove later
-                        appData.imageOverlays.push({
-                            imageOverlay: tileLayer,
-                            type: 'tileLayer',
-                            tagName: itemObj.tagName
-                        });
-                    } else if (!this.checked && itemObj.tileLayer) {
-                        // Remove the tile layer when unchecked
-                        const layersToRemove = appData.imageOverlays.filter(
-                            overlay => overlay.type === 'tileLayer' && overlay.tagName === itemObj.tagName
-                        );
-
-                        layersToRemove.forEach(layer => {
-                            layer.imageOverlay.remove();
-                        });
-
-                        // Filter out removed layers
-                        appData.imageOverlays = appData.imageOverlays.filter(
-                            overlay => !(overlay.type === 'tileLayer' && overlay.tagName === itemObj.tagName)
-                        );
-                    }
-                    return
-                }
-
+                const tagName = itemObj.tagName.toLowerCase()
                 if (this.checked) {
-                    if (!appData.selectedTypes.includes(itemObj.tagName)) {
-                        appData.selectedTypes.push(itemObj.tagName.toLowerCase());
+                    if (!appData.selectedTypes.includes(tagName)) {
+                        appData.selectedTypes.push(tagName);
                     }
                 } else {
-                    appData.selectedTypes = appData.selectedTypes.filter(item => item !== itemObj.tagName);
+                    appData.selectedTypes = appData.selectedTypes.filter(item => item !== tagName);
                 }
-
-                console.log('labelText', itemObj);
-                console.log('appData.selectedTypes', appData.selectedTypes);
-
-                //filter by tagName
-                const geometryData = []
-                appData.data.filter(item => {
-                    return item.tags.some(item => appData.selectedTypes.includes(item)) &&
-                        item.meta.glossary_map_json.type !== ""
-                }).forEach(item => {
-
-                    const geo = item.meta.glossary_map_json
-                    if (geo.type !== "") {
-                        geometryData.push({
-                            id: item.id,
-                            name: item.title,
-                            info: item.content,
-                            tags: item.tags,
-                            tags_: itemObj.tagName,
-                            ...item.meta.glossary_map_json
-                        })
-                    }
-                })
-
-                drawAllGeometry(geometryData)
-                rebuildOverlays()
+                drawAllGeometry()
             });
 
             const span = document.createElement('span');
