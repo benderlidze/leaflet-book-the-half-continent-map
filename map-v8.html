@@ -413,7 +413,7 @@
 
         // Checkbox items
         const geoItems = [
-            { name: "Regions", tagName: "Region", zOrder: 1, shouldIncludeThisTags: ['overlays'] },
+            { name: "Regions", tagName: "Region", zOrder: 1, shouldIncludeThisTags: ['overlay'] },
             { name: "Rivers", tagName: "river", tileLayer: "tiles_rivers", zOrder: 2, },
             { name: "Roads", tagName: "road", zOrder: 3, },
             { name: "Major Cities", tagName: "major-cities", zOrder: 4, },
@@ -1113,62 +1113,95 @@
 
             appData.selectedTypes.forEach(tagName => {
 
-                const tileLayerName = geoItems.find(i => i.tagName.toLocaleLowerCase() === tagName).tileLayer || ""
+                const geoItem = geoItems.find(i => i.tagName.toLocaleLowerCase() === tagName)
+                const tileLayerName = geoItem.tileLayer || ""
+
 
                 if (tileLayerName !== "") {
                     console.log('NEXT',);
-                    tilesLayers.push(tileLayerName)
+                    tilesLayers.push(geoItem)
                     return;
                 }
 
-                appData.data.filter(item => {
-                    return item.tags.some(item => item.includes(tagName)) &&
-                        item.meta.glossary_map_json.type !== ""
-                }).forEach(item => {
-                    const geo = item.meta.glossary_map_json
-                    const featured_image = item.featured_image
-                    //get layer type name - tiles or geometry from geoItems by tagName
+                appData.data
+                    .filter(item => {
+                        return item.tags.some(item => item.includes(tagName)) &&
+                            item.meta.glossary_map_json.type !== ""
+                    })
+                    .filter(item => {
+                        // FILETR BY tag names
+                        if (geoItem.shouldIncludeThisTags && geoItem.shouldIncludeThisTags.length > 0) {
+                            const includes = arrayIncludesAny(item.tags, geoItem.shouldIncludeThisTags);
+                            return includes
+                        }
+                        return true
 
-                    if (geo.type !== "" || featured_image != "") {
+                    })
+                    .forEach(item => {
+                        const geo = item.meta.glossary_map_json
+                        const featured_image = item.featured_image
+                        //get layer type name - tiles or geometry from geoItems by tagName
 
-                        geometryData.push({
-                            id: item.id,
-                            name: item.title,
-                            info: item.content,
-                            tags: item.tags,
-                            tags_: tagName,
-                            featured_image,
-                            ...item.meta.glossary_map_json
-                        })
-                    }
-                })
+                        if (geo.type !== "" || featured_image != "") {
+
+                            geometryData.push({
+                                id: item.id,
+                                name: item.title,
+                                info: item.content,
+                                tags: item.tags,
+                                tags_: tagName,
+                                featured_image,
+                                zOrder: geoItem.zOrder,
+                                geoItem: geoItem,
+                                ...item.meta.glossary_map_json
+                            })
+                        }
+                    })
             })
 
             console.log('geometryData', geometryData);
             console.log('tilesLayers', tilesLayers);
 
+
+            //CLEAR ALL LAYERS
             appData.imageOverlays.forEach(layer => {
                 layer.imageOverlay.remove();
             })
+            //removeAllCustomPanes()
+
+
+
+
 
             if (tilesLayers.length > 0) {
                 tilesLayers.forEach(layer => {
-                    const tileLayer = L.tileLayer(layer + '/{z}/{x}/{y}.png', {
+
+                    const { tileLayer, zOrder } = layer
+
+                    map.createPane(tileLayer);
+                    map.getPane(tileLayer).style.zIndex = 650;
+
+                    const mapTileLayer = L.tileLayer(tileLayer + '/{z}/{x}/{y}.png', {
                         noWrap: true,
                         preferCanvas: true,
                         bounds: mapBounds,
                         opacity: 0.8,
                         maxNativeZoom: 4,
-                        maxZoom: 7
-                    }).addTo(map);
+                        maxZoom: 7,
+                        pane: tileLayer // Specify the custom pane
+                    })
+                    mapTileLayer.addTo(map);
 
                     // Store reference to remove later
                     appData.imageOverlays.push({
-                        imageOverlay: tileLayer,
+                        imageOverlay: mapTileLayer,
                         type: 'tileLayer',
-                        tagName: layer
+                        tagName: tileLayer,
+                        panName: tileLayer,
                     });
                 })
+
+
             }
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -1185,14 +1218,25 @@
                 //         return true
                 //     }
                 // })
-                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .sort((a, b) => b.zOrder - a.zOrder)
+                .filter(tileLayer => {
+                    // if (tileLayer.shouldIncludeThisTags && tileLayer.shouldIncludeThisTags.length > 0) {
+                    //     return tileLayer.shouldIncludeThisTags.some(tag => appData.selectors.find(s => s.name === tag).input.checked)
+                    // }
+                    // else{
+                    //     return true
+                    // }
+                    console.log('tileLayer', tileLayer);
+                    return tileLayer.tileLayer === appData.tileLayer
+                })
                 .forEach(d => {
 
-                    const { id, name, featured_image, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const { id, name, featured_image, info, type, geometry, tileLayer, color: initialColor, zOrder } = d;
                     const color = initialColor ?? 'red';
 
                     if (featured_image && featured_image != "") {
-                        const overlay = displayImageOverlay(featured_image)
+                        console.log('d', d);
+                        const overlay = displayImageOverlay(featured_image, zOrder);
                         geometryLayers.push({ id, geom: overlay, removable: true })
                         return;
                     }
@@ -1513,13 +1557,12 @@
                 const isChecked = appData.selectedTypes.some(type => tags.map(v => v.toLowerCase()).includes(type.toLowerCase()))
                 // console.log('overlay', overlay);
                 if (isChecked) {
-                    displayImageOverlay(featured_image, tags)
+                    displayImageOverlay(featured_image)
                 }
             })
         }
 
-        function displayImageOverlay(imageUrl) {
-
+        function displayImageOverlay(imageUrl, zIndex = 1) {
             // Extract filename from URL
             const filename = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
             // Extract values using regex
@@ -1546,21 +1589,24 @@
             const overlayBottomRight = rc.unproject([x + width, y + height]);
             const overlayBounds = L.latLngBounds(overlayTopLeft, overlayBottomRight);
 
-            // Create the overlay
+            console.log('zIndex', zIndex);
+            // Create the overlay with zIndex option
             const imageOverlay = L.imageOverlay(
                 imageUrl,
                 overlayBounds,
-                { opacity: 1 }
+                {
+                    opacity: 1,
+                    zIndex: zIndex  // Set the z-index here
+                }
             );
 
-
             imageOverlay.addTo(map);
-            imageOverlay.bringToBack()
 
-            appData.imageOverlays.push({ imageOverlay })
+            // No need for bringToBack() as we're using zIndex now
 
-            return imageOverlay
+            appData.imageOverlays.push({ imageOverlay, zIndex });
 
+            return imageOverlay;
         }
 
         // Loading functions
@@ -1576,6 +1622,44 @@
             }, 300);
         }
 
+
+        function removeAllCustomPanes() {
+            const panes = map.getPanes();
+
+            // Default pane names that shouldn't be removed
+            const defaultPanes = [
+                'mapPane',
+                'tilePane',
+                'overlayPane',
+                'shadowPane',
+                'markerPane',
+                'tooltipPane',
+                'popupPane'
+            ];
+
+            for (const paneName in panes) {
+                if (!defaultPanes.includes(paneName)) {
+                    const pane = panes[paneName];
+
+                    if (pane && pane.parentNode) {
+                        pane.parentNode.removeChild(pane);
+                    }
+
+                    if (map._panes && map._panes[paneName]) {
+                        delete map._panes[paneName];
+                    }
+
+                    if (map._paneRenderers && map._paneRenderers[paneName]) {
+                        delete map._paneRenderers[paneName];
+                    }
+                }
+            }
+        }
+
+
+        function arrayIncludesAny(array1, array2) {
+            return array2.some(item => array1.includes(item));
+        }
 
     </script>
 
