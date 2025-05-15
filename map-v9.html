@@ -413,7 +413,8 @@
 
         // Checkbox items
         const geoItems = [
-            { name: "Regions", tagName: "Region", zOrder: 1, shouldIncludeThisTags: ['overlay'] },
+            //{ name: "Regions", tagName: "Region", zOrder: 1, shouldIncludeThisTags: ['overlay'] },
+            { name: "Regions", tagName: "Region", tileLayer: "tiles_regions", zOrder: 1, },
             { name: "Rivers", tagName: "river", tileLayer: "tiles_rivers", zOrder: 2, },
             { name: "Roads", tagName: "road", zOrder: 3, },
             { name: "Major Cities", tagName: "major-cities", zOrder: 4, },
@@ -1179,7 +1180,7 @@
                     const { tileLayer, zOrder } = layer
 
                     map.createPane(tileLayer);
-                    map.getPane(tileLayer).style.zIndex = 650;
+                    map.getPane(tileLayer).style.zIndex = 650 + zOrder;
 
                     const mapTileLayer = L.tileLayer(tileLayer + '/{z}/{x}/{y}.png', {
                         noWrap: true,
