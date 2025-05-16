@@ -904,7 +904,10 @@
 
             if (result.featured_image && result.featured_image.length > 5) {
                 //IT IS AN OVERLAY
-                const overlay = displayImageOverlay(result.featured_image)
+                const overlay = displayImageOverlay({
+                    imageUrl: result.featured_image,
+                    type: "search"
+                })
                 geometryLayers.push({ id: uuid(), geom: overlay, removable: true })
                 return;
             }
@@ -1000,7 +1003,7 @@
                         name: item.title,
                         info: item.content,
                         featured_image: item.featured_image,
-                        ...JSON.parse(item.meta.glossary_map_json)
+                        ...item.meta.glossary_map_json
                     })
                 }
             })
@@ -1024,7 +1027,10 @@
 
 
                     if (featured_image && featured_image != "") {
-                        const overlay = displayImageOverlay(featured_image)
+                        const overlay = displayImageOverlay({
+                            imageUrl: featured_image,
+                            type: "search"
+                        })
                         appData.searchBoxGeometry.push({ id, geom: overlay, removable: true })
                         return;
                     }
@@ -1222,7 +1228,11 @@
 
                     if (featured_image && featured_image != "") {
                         console.log('d', d);
-                        const overlay = displayImageOverlay(featured_image, zOrder);
+                        const overlay = displayImageOverlay({
+                            imageUrl: featured_image,
+                            zIndex: zOrder,
+                            type: "tileLayer"
+                        });
                         geometryLayers.push({ id, geom: overlay, removable: true })
                         return;
                     }
@@ -1362,7 +1372,7 @@
                 appData.imageOverlays = appData.imageOverlays.filter(overlay => overlay.type !== type)
                 return;
             }
-            if (type && type === "all") {
+            if (type && type === "search") {
                 appData.imageOverlays.forEach(overlay => {
                     overlay.imageOverlay.remove()
                 })
@@ -1384,7 +1394,7 @@
         //     })
         // }
 
-        function displayImageOverlay(imageUrl, zIndex = 1) {
+        function displayImageOverlay({ imageUrl, zIndex = 1, type }) {
 
             console.log('displayImageOverlay', imageUrl);
             // Extract filename from URL
@@ -1428,7 +1438,7 @@
 
             // No need for bringToBack() as we're using zIndex now
 
-            appData.imageOverlays.push({ imageOverlay, zIndex, type: 'overlay' });
+            appData.imageOverlays.push({ imageOverlay, zIndex, type: type });
 
             return imageOverlay;
         }
