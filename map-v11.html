@@ -589,6 +589,7 @@
 
             appData.tileLayer = mapTilesNames.IdlewildInset
 
+            clearOverlays({}) // clear all overlays
             drawAllItems()
         }
         function switchToBrandenlandsInset() {
@@ -613,6 +614,7 @@
 
             appData.tileLayer = mapTilesNames.BrandenlandsInset
 
+            clearOverlays({}) // clear all overlays
             drawAllItems()
         }
         function switchToMain() {
@@ -639,6 +641,7 @@
 
             appData.tileLayer = mapTilesNames.main
 
+            clearOverlays({}) // clear all overlays
             drawAllItems()
         }
 
@@ -1207,8 +1210,6 @@
                         panName: tileLayer,
                     });
                 })
-
-
             }
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -1362,8 +1363,7 @@
 
         function clearOverlays({ type }) {
             console.log('clearOverlays', type);
-
-            if (type && type === "tileLayer") {
+            if (type && type !== "all") {
                 appData.imageOverlays.forEach(overlay => {
                     if (overlay.type === type) {
                         overlay.imageOverlay.remove()
@@ -1371,15 +1371,12 @@
                 })
                 appData.imageOverlays = appData.imageOverlays.filter(overlay => overlay.type !== type)
                 return;
-            }
-            if (type && type === "search") {
+            } else {
                 appData.imageOverlays.forEach(overlay => {
                     overlay.imageOverlay.remove()
                 })
                 appData.imageOverlays = []
             }
-
-
         }
 
         // function rebuildOverlays() {
