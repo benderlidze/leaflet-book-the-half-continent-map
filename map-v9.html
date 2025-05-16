@@ -82,6 +82,11 @@
         }
 
         .autocomplete-items {
+
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: hidden;
+
             position: absolute;
             border: 1px solid #d4d4d4;
             border-bottom: none;
@@ -729,14 +734,12 @@
 
         function autocomplete(inp, arr) {
 
-
-
             /*the autocomplete function takes two arguments,
             the text field element and an array of possible autocompleted values:*/
             var currentFocus;
             /*execute a function when someone writes in the text field:*/
             inp.addEventListener("input", function (e) {
-                console.log('11', arr);
+
                 var a, b, i, val = this.value;
                 /*close any already open lists of autocompleted values*/
                 closeAllLists();
@@ -748,6 +751,7 @@
                 a.setAttribute("class", "autocomplete-items");
                 /*append the DIV element as a child of the autocomplete container:*/
                 this.parentNode.appendChild(a);
+
                 /*for each item in the array...*/
                 for (i = 0; i < arr.length; i++) {
                     /*check if the item starts with the same letters as the text field value:*/
@@ -841,6 +845,7 @@
             });
         }
 
+
         async function showItemOnMap(result) {
 
             console.log('result', result);
@@ -853,14 +858,14 @@
 
             drawItem(null)//clear prev geometry
 
-            if (result && result.meta.glossary_map_json.length > 1) {
-                const resData = result.meta.glossary_map_json
-                const resJson = JSON.parse(resData)
+
+            if (result && result.meta.glossary_map_json.type !== "") {
+                const resJson = result.meta.glossary_map_json
                 if (!resJson) {
                     console.warn('No Data!!!');
                     return;
                 }
-                const { x, y, color, info, geometry, type, tileLayer } = resJson
+                const { geometry, type, tileLayer } = resJson
 
                 if (tileLayer !== appData.tileLayer) {
                     switch (tileLayer) {
@@ -886,9 +891,22 @@
                 }
 
                 if (geometry.length > 0) {
+                    const mapBounds = L.latLngBounds();
+                    const unpCoords = geometry.map(c => {
+                        mapBounds.extend(rc.unproject([c.x, c.y]))
+                        return rc.unproject([c.x, c.y])
+                    })
+                    map.fitBounds(mapBounds);
                     appData.selectors.find(s => s.name === type).input.click()
                     drawItem(result.id)
                 }
+            }
+
+            if (result.featured_image && result.featured_image.length > 5) {
+                //IT IS AN OVERLAY
+                const overlay = displayImageOverlay(result.featured_image)
+                geometryLayers.push({ id: uuid(), geom: overlay, removable: true })
+                return;
             }
 
         }
@@ -1662,6 +1680,14 @@
             return array2.some(item => array1.includes(item));
         }
 
+        // generate a RFC-4122 v4 UUID
+        function uuid() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                return v.toString(16);
+            });
+        }
     </script>
 
 
