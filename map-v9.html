@@ -82,11 +82,6 @@
         }
 
         .autocomplete-items {
-
-            max-height: 500px;
-            overflow-y: auto;
-            overflow-x: hidden;
-
             position: absolute;
             border: 1px solid #d4d4d4;
             border-bottom: none;
@@ -450,7 +445,6 @@
         const clearButton = document.getElementById("clear")
 
         const geometryLayers = []
-
         const tempCoords = []
 
         const img = {
@@ -471,8 +465,7 @@
             selectors: [],
             overlays: [],
             selectedTypes: [],
-            imageOverlays: [],
-            searchBoxGeometry: [],
+            imageOverlays: []
             //editMode: false //if edit move disable all interactions till save cancel delete
         }
 
@@ -736,12 +729,14 @@
 
         function autocomplete(inp, arr) {
 
+
+
             /*the autocomplete function takes two arguments,
             the text field element and an array of possible autocompleted values:*/
             var currentFocus;
             /*execute a function when someone writes in the text field:*/
             inp.addEventListener("input", function (e) {
-
+                console.log('11', arr);
                 var a, b, i, val = this.value;
                 /*close any already open lists of autocompleted values*/
                 closeAllLists();
@@ -753,7 +748,6 @@
                 a.setAttribute("class", "autocomplete-items");
                 /*append the DIV element as a child of the autocomplete container:*/
                 this.parentNode.appendChild(a);
-
                 /*for each item in the array...*/
                 for (i = 0; i < arr.length; i++) {
                     /*check if the item starts with the same letters as the text field value:*/
@@ -860,6 +854,12 @@
 
             drawItem(null)//clear prev geometry
 
+            if (result.featured_image && result.featured_image.length > 5) {
+                //IT IS AN OVERLAY
+                const overlay = displayImageOverlay(result.featured_image)
+                geometryLayers.push({ id: uuid(), geom: overlay, removable: true })
+                return;
+            }
 
             if (result && result.meta.glossary_map_json.type !== "") {
                 const resJson = result.meta.glossary_map_json
@@ -868,6 +868,8 @@
                     return;
                 }
                 const { geometry, type, tileLayer } = resJson
+
+                console.log('resJson', resJson);
 
                 if (tileLayer !== appData.tileLayer) {
                     switch (tileLayer) {
@@ -898,20 +900,69 @@
                         mapBounds.extend(rc.unproject([c.x, c.y]))
                         return rc.unproject([c.x, c.y])
                     })
+
                     map.fitBounds(mapBounds);
+
                     appData.selectors.find(s => s.name === type).input.click()
+
                     drawItem(result.id)
                 }
             }
 
-            if (result.featured_image && result.featured_image.length > 5) {
-                //IT IS AN OVERLAY
-                const overlay = displayImageOverlay(result.featured_image)
-                geometryLayers.push({ id: uuid(), geom: overlay, removable: true })
-                return;
-            }
 
         }
+
+        // async function showItemOnMap(result) {
+
+        //     console.log('result', result);
+
+        //     if (result && result.id) {
+        //         window.parent.postMessage({
+        //             itemId: result.id,
+        //         }, "*");
+        //     }
+
+        //     drawItem(null)//clear prev geometry
+
+        //     if (result && result.meta.glossary_map_json.length > 1) {
+        //         const resData = result.meta.glossary_map_json
+        //         const resJson = JSON.parse(resData)
+        //         if (!resJson) {
+        //             console.warn('No Data!!!');
+        //             return;
+        //         }
+        //         const { x, y, color, info, geometry, type, tileLayer } = resJson
+
+        //         if (tileLayer !== appData.tileLayer) {
+        //             switch (tileLayer) {
+        //                 case mapTilesNames.BrandenlandsInset:
+        //                     switchToBrandenlandsInset()
+        //                     break;
+        //                 case mapTilesNames.IdlewildInset:
+        //                     switchToIdlewildInset()
+        //                     break;
+        //                 case mapTilesNames.main:
+        //                     switchToMain()
+        //                     break;
+        //             }
+
+        //             await new Promise(resolve => {
+        //                 map.once('moveend', () => {
+        //                     resolve()
+        //                 })
+        //                 setTimeout(() => {
+        //                     resolve()
+        //                 }, 2000)
+        //             })
+        //         }
+
+        //         if (geometry.length > 0) {
+        //             appData.selectors.find(s => s.name === type).input.click()
+        //             drawItem(result.id)
+        //         }
+        //     }
+
+        // }
 
         // GET all items
         function getAllItems() {
@@ -986,7 +1037,7 @@
 
         function drawItem(objectId) {
 
-            console.log('drawItem', objectId);
+            console.log('objectId', objectId);
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
@@ -1006,6 +1057,16 @@
                     })
                 }
             })
+
+            console.log('drawItem', objectId, geometryData);
+
+            // const mapBounds = L.latLngBounds();
+            // const unpCoords = geometry.map(c => {
+            //     mapBounds.extend(rc.unproject([c.x, c.y]))
+            //     return rc.unproject([c.x, c.y])
+            // })
+            // map.fitBounds(mapBounds);
+
 
             geometryData
                 .filter(geom => {
@@ -1117,7 +1178,7 @@
 
         function drawAllGeometry() {
 
-            console.log('drawAllGeometry appData.', appData.selectedTypes);
+            console.log('appData.', appData.selectedTypes);
 
             const geometryData = []
             const tilesLayers = []
@@ -1127,7 +1188,9 @@
                 const geoItem = geoItems.find(i => i.tagName.toLocaleLowerCase() === tagName)
                 const tileLayerName = geoItem.tileLayer || ""
 
+
                 if (tileLayerName !== "") {
+                    console.log('NEXT',);
                     tilesLayers.push(geoItem)
                     return;
                 }
@@ -1179,6 +1242,9 @@
             //removeAllCustomPanes()
 
 
+
+
+
             if (tilesLayers.length > 0) {
                 tilesLayers.forEach(layer => {
 
@@ -1216,8 +1282,23 @@
             console.log('===>>>', geometryData.filter(d => d.overlayImage));
 
             geometryData
+                // .filter(geom => {
+                //     if (appData.type && appData.type !== "") {
+                //         return geom.type === appData.type
+                //     }
+                //     else {
+                //         return true
+                //     }
+                // })
                 .sort((a, b) => b.zOrder - a.zOrder)
                 .filter(tileLayer => {
+                    // if (tileLayer.shouldIncludeThisTags && tileLayer.shouldIncludeThisTags.length > 0) {
+                    //     return tileLayer.shouldIncludeThisTags.some(tag => appData.selectors.find(s => s.name === tag).input.checked)
+                    // }
+                    // else{
+                    //     return true
+                    // }
+                    console.log('tileLayer', tileLayer);
                     return tileLayer.tileLayer === appData.tileLayer
                 })
                 .forEach(d => {
@@ -1297,7 +1378,172 @@
 
         function drawAllItems() {
             return;
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
+
+            const geometryData = []
+            appData.data.forEach(item => {
+                if (item.meta.glossary_map_json.length > 1) {
+
+                    geometryData.push({
+                        id: item.id,
+                        name: item.title,
+                        info: item.content,
+                        ...JSON.parse(item.meta.glossary_map_json)
+                    })
+                }
+            })
+
+            console.log('geometryData', geometryData);
+
+            geometryData
+                .filter(geom => {
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
+                    }
+                    else {
+                        return true
+                    }
+                })
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .forEach(d => {
+
+                    console.log('d', d);
+
+                    const { id, name, featured_image, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const color = initialColor ?? 'red';
+
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry, featured_image);
+
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            id,
+                            color,
+                            originalColor: color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            appData.editLayerId = id
+
+                            emphasizeItem(id)
+
+                        })
+                        geometryLayers.push({ id, geom: point, removable: true })
+                    }
+
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            id,
+                            fillColor: color,
+                            originalColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            id,
+                            color,
+                            originalColor: color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: line, removable: true })
+                    }
+                })
         }
+
+        // function generateEditor({
+        //     id,
+        //     type,
+        //     name,
+        //     info,
+        // }) {
+        //     const container = document.createElement("div")
+        //     container.className = "container-column"
+
+        //     const nameInput = document.createElement("div")
+        //     nameInput.style.fontWeight = "bold"
+        //     nameInput.innerHTML = name
+
+        //     const infoArea = document.createElement("div")
+        //     infoArea.innerHTML = info
+
+
+        //     container.appendChild(nameInput)
+        //     container.appendChild(infoArea)
+
+        //     editorDiv.innerHTML = ''
+        //     editorDiv.appendChild(container)
+
+        //     return { editorDiv, container }
+        // }
+
+        function modalAlert({ del, cancel }) {
+            const modal = document.createElement("div")
+            modal.style = "z-index:1000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;"
+
+            const container = document.createElement("div")
+            container.style = "display:flex; gap:10px; flex-direction:column;  background-color: white; padding: 20px; border-radius: 5px;gap"
+
+            const text = document.createElement("div")
+            text.innerText = "Are you sure you want to delete?"
+            container.appendChild(text)
+
+            const buttonContainer = document.createElement("div")
+            buttonContainer.style = "display:flex; gap:10px; flex-direction:row; justify-content: center;"
+
+            const okButton = document.createElement("button")
+            okButton.innerText = "Delete"
+            okButton.style.flex = 1
+            okButton.addEventListener("click", () => {
+                del && del()
+                modal.remove()
+            })
+
+            const cancelButton = document.createElement("button")
+            cancelButton.innerText = "Cancel"
+            cancelButton.style.flex = 1
+            cancelButton.addEventListener("click", () => {
+                cancel && cancel()
+                modal.remove()
+            })
+
+            buttonContainer.appendChild(okButton)
+            buttonContainer.appendChild(cancelButton)
+            container.appendChild(buttonContainer)
+
+            modal.appendChild(container)
+
+            document.body.appendChild(modal)
+        }
+
+
+
 
         const header = document.querySelector('#geo-accordion .accordion-header');
         const panel = document.querySelector('#geo-accordion .accordion-panel');
@@ -1487,14 +1733,6 @@
             return array2.some(item => array1.includes(item));
         }
 
-        // generate a RFC-4122 v4 UUID
-        function uuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                const r = (Math.random() * 16) | 0;
-                const v = c === 'x' ? r : (r & 0x3) | 0x8;
-                return v.toString(16);
-            });
-        }
     </script>
 
 

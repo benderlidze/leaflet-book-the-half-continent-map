@@ -993,7 +993,7 @@
 
             const geometryData = []
             appData.data.forEach(item => {
-                if (item.meta.glossary_map_json.length > 1) {
+                if (item.meta.glossary_map_json.type) {
 
                     geometryData.push({
                         id: item.id,
@@ -1112,9 +1112,9 @@
         }
 
 
-        function drawAllGeometry() {
+        function drawGeographicalSelections() {
 
-            console.log('drawAllGeometry appData.', appData.selectedTypes);
+            console.log('drawGeographicalSelections appData.', appData.selectedTypes);
 
             const geometryData = []
             const tilesLayers = []
@@ -1325,7 +1325,7 @@
                 } else {
                     appData.selectedTypes = appData.selectedTypes.filter(item => item !== tagName);
                 }
-                drawAllGeometry()
+                drawGeographicalSelections()
             });
 
             const span = document.createElement('span');
