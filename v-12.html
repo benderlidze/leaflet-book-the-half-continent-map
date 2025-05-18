@@ -414,9 +414,6 @@
         const BrandenlandsLayerFolder = "all_tiles/brandenlands"
         const IdlewildLayerFolder = "all_tiles/idlewild"
 
-
-
-
         // Checkbox items
         const geoItems = [
             {
@@ -604,6 +601,9 @@
 
             clearOverlays({}) // clear all overlays
             drawAllItems()
+
+            //redraw additional tiles
+            drawGeographicalSelections()
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -629,6 +629,9 @@
 
             clearOverlays({}) // clear all overlays
             drawAllItems()
+
+            //redraw additional tiles
+            drawGeographicalSelections()
         }
         function switchToMain() {
             tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
@@ -656,6 +659,9 @@
 
             clearOverlays({}) // clear all overlays
             drawAllItems()
+
+            //redraw additional tiles
+            drawGeographicalSelections()
         }
 
         function unproject(arr) {
@@ -1153,13 +1159,12 @@
             //CLEAR ALL LAYERS
             clearOverlays({ type: "tileLayer" })
 
+            // Fix for v-12.html
             if (tilesLayers.length > 0) {
                 tilesLayers.forEach(layer => {
-
                     console.log('layer', layer);
 
                     const { tileLayer, zOrder } = layer
-
                     const mainLayerName = appData.tileLayer
                     const selectedLayer = tileLayer[mainLayerName]
 
@@ -1168,18 +1173,17 @@
                         return;
                     }
 
-                    map.createPane(selectedLayer);
-                    map.getPane(selectedLayer).style.zIndex = 650 + zOrder;
+                    // Remove custom pane creation
+                    // Just use zIndex property directly
 
-                    // Use the global mapBounds instead of an undefined local variable
                     const mapTileLayer = L.tileLayer(selectedLayer + '/{z}/{x}/{y}.png', {
                         noWrap: true,
                         preferCanvas: true,
-                        bounds: mapBounds, // Use global mapBounds instead of current view bounds
+                        bounds: mapBounds,
                         opacity: 1,
                         maxNativeZoom: 4,
                         maxZoom: 7,
-                        zIndex: 650 + zOrder // Use zIndex instead of custom pane
+                        zIndex: 650 + zOrder
                     })
                     mapTileLayer.addTo(map);
 
@@ -1187,8 +1191,7 @@
                     appData.imageOverlays.push({
                         imageOverlay: mapTileLayer,
                         type: 'tileLayer',
-                        tagName: selectedLayer,
-                        panName: selectedLayer,
+                        tagName: selectedLayer
                     });
                 })
             }
