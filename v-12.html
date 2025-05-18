@@ -410,23 +410,27 @@
     </div>
 
     <script>
-        const tilesFolder = "all_tiles"
+        const MainLayerFolder = "all_tiles/main"
+        const BrandenlandsLayerFolder = "all_tiles/brandenlands"
+        const IdlewildLayerFolder = "all_tiles/idlewild"
+
+
 
 
         // Checkbox items
         const geoItems = [
             {
                 name: "Regions", tagName: "Region", tileLayer: {
-                    Main: tilesFolder + "/main/regions",
-                    BrandenlandsInset: tilesFolder + "/brandenlands/regions",
-                    IdlewildInset: tilesFolder + "/idlewild/regions"
+                    Main: MainLayerFolder + "/regions",
+                    BrandenlandsInset: BrandenlandsLayerFolder + "/regions",
+                    IdlewildInset: IdlewildLayerFolder + "/regions"
                 }, zOrder: 1,
             },
             {
                 name: "Rivers", tagName: "river", tileLayer: {
-                    Main: "tiles_rivers",
-                    BrandenlandsInset: "",
-                    IdlewildInset: ""
+                    Main: MainLayerFolder + "/rivers",
+                    BrandenlandsInset: BrandenlandsLayerFolder + "/rivers",
+                    IdlewildInset: IdlewildLayerFolder + "/rivers"
                 },
                 zOrder: 2,
             },
@@ -493,8 +497,8 @@
                 { x: 11070, y: 9902 },
             ],
             img: { x: 2506, y: 2715 },
-            tiles: tilesFolder + "/brandenlands/base/{z}/{x}/{y}.png"
-        }
+            tiles: BrandenlandsLayerFolder + "/base/{z}/{x}/{y}.png"
+        };
 
         const IdlewildInset = {
             geometry: [
@@ -506,7 +510,7 @@
                 { x: 11718, y: 9902 }
             ],
             img: { x: 4961, y: 3307 },
-            tiles: tilesFolder + "/idlewild/base/{z}/{x}/{y}.png"
+            tiles: IdlewildLayerFolder + "/base/{z}/{x}/{y}.png"
         }
 
         // create the map
@@ -530,7 +534,7 @@
         map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
         map.setZoom(2)
 
-        const tileLayer = L.tileLayer('all_tiles/main/base/{z}/{x}/{y}.png', {
+        const tileLayer = L.tileLayer(MainLayerFolder + '/base/{z}/{x}/{y}.png', {
             noWrap: true,
             preferCanvas: true,
             bounds: mapBounds
