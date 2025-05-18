@@ -187,11 +187,6 @@
             width: fit-content;
         }
 
-
-
-
-
-
         /* Accordion Styles */
         #geo-accordion {
             position: absolute;
@@ -415,14 +410,16 @@
     </div>
 
     <script>
+        const tilesFolder = "all_tiles"
+
 
         // Checkbox items
         const geoItems = [
             {
                 name: "Regions", tagName: "Region", tileLayer: {
-                    Main: "tiles_regions_labels",
+                    Main: tilesFolder + "/main/region_labels",
                     BrandenlandsInset: "",
-                    IdlewildInset: ""
+                    IdlewildInset: tilesFolder + "/idlewild/region_labels"
                 }, zOrder: 1,
             },
             {
