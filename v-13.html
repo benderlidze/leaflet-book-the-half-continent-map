@@ -558,23 +558,23 @@
         // idlewildInset.addEventListener('click', switchToIdlewildInset)
         // brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
 
-        const BrandenlandsInsetPolygon = drawGeometry({
-            geometry: BrandenlandsInset.geometry,
-            color: "#e2d5e9",
-            type: "polygon",
-            fit: false,
-            stroke: "red"
-        }, false)
-        BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
+        // const BrandenlandsInsetPolygon = drawGeometry({
+        //     geometry: BrandenlandsInset.geometry,
+        //     color: "#e2d5e9",
+        //     type: "polygon",
+        //     fit: false,
+        //     stroke: "red"
+        // }, false)
+        // BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
 
-        const IdlewildInsetPolygon = drawGeometry({
-            geometry: IdlewildInset.geometry,
-            color: "#c9e2d4",
-            type: "polygon",
-            fit: false,
-            stroke: "red"
-        }, false)
-        IdlewildInsetPolygon.on('click', switchToIdlewildInset)
+        // const IdlewildInsetPolygon = drawGeometry({
+        //     geometry: IdlewildInset.geometry,
+        //     color: "#c9e2d4",
+        //     type: "polygon",
+        //     fit: false,
+        //     stroke: "red"
+        // }, false)
+        // IdlewildInsetPolygon.on('click', switchToIdlewildInset)
 
         function switchToIdlewildInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -591,8 +591,8 @@
             map.fitBounds(mapBounds);
             tileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
-            BrandenlandsInsetPolygon.remove()
-            IdlewildInsetPolygon.remove()
+            // BrandenlandsInsetPolygon.remove()
+            // IdlewildInsetPolygon.remove()
 
             IdlewildInsetTileLayer.addTo(map)
 
@@ -620,8 +620,9 @@
             map.fitBounds(mapBounds);
             tileLayer.remove()
             IdlewildInsetTileLayer.remove()
-            IdlewildInsetPolygon.remove()
-            BrandenlandsInsetPolygon.remove()
+
+            // IdlewildInsetPolygon.remove()
+            // BrandenlandsInsetPolygon.remove()
 
             BrandenlandsInsetTileLayer.addTo(map)
 
@@ -649,8 +650,8 @@
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
 
-            IdlewildInsetPolygon.addTo(map)
-            BrandenlandsInsetPolygon.addTo(map)
+            // IdlewildInsetPolygon.addTo(map)
+            // BrandenlandsInsetPolygon.addTo(map)
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
