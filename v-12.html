@@ -417,9 +417,9 @@
         const geoItems = [
             {
                 name: "Regions", tagName: "Region", tileLayer: {
-                    Main: tilesFolder + "/main/region_labels",
-                    BrandenlandsInset: "",
-                    IdlewildInset: tilesFolder + "/idlewild/region_labels"
+                    Main: tilesFolder + "/main/regions",
+                    BrandenlandsInset: tilesFolder + "/brandenlands/regions",
+                    IdlewildInset: tilesFolder + "/idlewild/regions"
                 }, zOrder: 1,
             },
             {
@@ -493,7 +493,7 @@
                 { x: 11070, y: 9902 },
             ],
             img: { x: 2506, y: 2715 },
-            tiles: "tiles_brandenlands/{z}/{x}/{y}.png"
+            tiles: tilesFolder + "/brandenlands/base/{z}/{x}/{y}.png"
         }
 
         const IdlewildInset = {
@@ -506,7 +506,7 @@
                 { x: 11718, y: 9902 }
             ],
             img: { x: 4961, y: 3307 },
-            tiles: "tiles_idlewild/{z}/{x}/{y}.png"
+            tiles: tilesFolder + "/idlewild/base/{z}/{x}/{y}.png"
         }
 
         // create the map
@@ -530,7 +530,7 @@
         map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
         map.setZoom(2)
 
-        const tileLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
+        const tileLayer = L.tileLayer('all_tiles/main/base/{z}/{x}/{y}.png', {
             noWrap: true,
             preferCanvas: true,
             bounds: mapBounds
