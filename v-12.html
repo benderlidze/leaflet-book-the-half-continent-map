@@ -418,9 +418,21 @@
 
         // Checkbox items
         const geoItems = [
-            //{ name: "Regions", tagName: "Region", zOrder: 1, shouldIncludeThisTags: ['overlay'] },
-            { name: "Regions", tagName: "Region", tileLayer: "tiles_regions", zOrder: 1, },
-            { name: "Rivers", tagName: "river", tileLayer: "tiles_rivers", zOrder: 2, },
+            {
+                name: "Regions", tagName: "Region", tileLayer: {
+                    Main: "tiles_regions_labels",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                }, zOrder: 1,
+            },
+            {
+                name: "Rivers", tagName: "river", tileLayer: {
+                    Main: "tiles_rivers",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                },
+                zOrder: 2,
+            },
             { name: "Roads", tagName: "road", zOrder: 3, },
             { name: "Major Cities", tagName: "major-cities", zOrder: 4, },
             { name: "Minor Cities", tagName: "minor-cities", zOrder: 5, },
@@ -698,45 +710,6 @@
         }
 
 
-
-        function buildTypeSelectors() {
-
-            const types = [
-                { name: 'none', label: "Clear" },
-                { name: 'marker', label: "Location" },
-                { name: 'polygon', label: "Region" },
-                { name: 'line', label: "Path" }
-            ]
-            const container = document.getElementById("selectors")
-
-            return types.map(type => {
-                const input = document.createElement("input")
-                input.type = "radio"
-                input.name = "type"
-                input.value = type.name
-                input.checked = type.name === 'marker'
-                input.id = type.name
-                input.addEventListener("change", () => {
-                    appData.type = type.name
-                    drawAllItems()
-                })
-
-                const label = document.createElement("label")
-                label.htmlFor = type.name
-                label.innerText = type.label
-
-                const div = document.createElement("div")
-                div.appendChild(input)
-                div.appendChild(label)
-
-                container.appendChild(div)
-
-                return { name: type.name, input }
-            })
-
-        }
-
-
         function autocomplete(inp, arr) {
 
             /*the autocomplete function takes two arguments,
@@ -900,7 +873,7 @@
                         return rc.unproject([c.x, c.y])
                     })
                     map.fitBounds(mapBounds);
-                    appData.selectors.find(s => s.name === type).input.click()
+                    //appData.selectors.find(s => s.name === type).input.click()
                     drawItem(result.id)
                 }
             }
@@ -952,7 +925,6 @@
                         item.tags = item.tags.map(i => i.toLowerCase())
                     })
 
-                    appData.selectors = buildTypeSelectors()
                     autocomplete(document.getElementById("myInput"), data);
                     drawAllItems()
 
@@ -1183,13 +1155,23 @@
             if (tilesLayers.length > 0) {
                 tilesLayers.forEach(layer => {
 
+                    console.log('layer', layer);
+
                     const { tileLayer, zOrder } = layer
 
-                    map.createPane(tileLayer);
-                    map.getPane(tileLayer).style.zIndex = 650 + zOrder;
+                    const mainLayerName = appData.tileLayer
+                    const selectedLayer = tileLayer[mainLayerName]
+
+                    if (selectedLayer === "") {
+                        console.warn('No tile layer for this main layer ' + mainLayerName);
+                        return;
+                    }
+
+                    map.createPane(selectedLayer);
+                    map.getPane(selectedLayer).style.zIndex = 650 + zOrder;
 
                     // Use the global mapBounds instead of an undefined local variable
-                    const mapTileLayer = L.tileLayer(tileLayer + '/{z}/{x}/{y}.png', {
+                    const mapTileLayer = L.tileLayer(selectedLayer + '/{z}/{x}/{y}.png', {
                         noWrap: true,
                         preferCanvas: true,
                         bounds: mapBounds, // Use global mapBounds instead of current view bounds
@@ -1204,8 +1186,8 @@
                     appData.imageOverlays.push({
                         imageOverlay: mapTileLayer,
                         type: 'tileLayer',
-                        tagName: tileLayer,
-                        panName: tileLayer,
+                        tagName: selectedLayer,
+                        panName: selectedLayer,
                     });
                 })
             }
