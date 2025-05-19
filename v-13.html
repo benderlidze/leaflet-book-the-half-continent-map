@@ -138,10 +138,17 @@
             cursor: pointer;
             flex-direction: column;
             text-align: center;
-            border: 1px solid #535353;
+            border: 3px solid transparent;
             white-space: nowrap;
             padding: 5px;
+            user-select: none;
         }
+
+        .active-layer {
+            border: 3px solid green !important;
+            box-sizing: border-box;
+        }
+
 
 
 
@@ -367,7 +374,7 @@
         </div>
 
         <div id="container">
-            <div id="full-map">Half-Continent</div>
+            <div id="full-map" class="active-layer">Half-Continent</div>
             <div id="brandenlands">Brandenlands </div>
             <div id="idlewild">Idlewild</div>
         </div>
@@ -593,6 +600,11 @@
 
             //redraw additional tiles
             drawGeographicalSelections()
+
+            idlewildInset.classList.add("active-layer")
+            brandenlandsInset.classList.remove("active-layer")
+            fullMap.classList.remove("active-layer")
+
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -622,6 +634,11 @@
 
             //redraw additional tiles
             drawGeographicalSelections()
+
+            brandenlandsInset.classList.add("active-layer")
+            idlewildInset.classList.remove("active-layer")
+            fullMap.classList.remove("active-layer")
+
         }
         function switchToMain() {
             tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
@@ -652,6 +669,10 @@
 
             //redraw additional tiles
             drawGeographicalSelections()
+
+            fullMap.classList.add("active-layer")
+            brandenlandsInset.classList.remove("active-layer")
+            idlewildInset.classList.remove("active-layer")
         }
 
         function unproject(arr) {
