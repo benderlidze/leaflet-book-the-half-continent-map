@@ -350,6 +350,18 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         }
 
+        #clearSearch {
+            display: flex;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: 1px solid gray;
+            cursor: pointer;
+            padding: 3px;
+        }
+
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -380,6 +392,14 @@
         <div class="autocomplete" style="z-index:100000;top:10px; right:10px;position:absolute;width:320px;">
             <input id="myInput" style="border:1px solid black; border-radius: 5px;" type="text" name="myCountry"
                 placeholder="Search">
+            <button id="clearSearch">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+
         </div>
 
         <div id="geo-accordion">
@@ -450,11 +470,16 @@
         const brandenlandsInset = document.getElementById("brandenlands")
 
         const generateButton = document.getElementById("generate")
-        const clearButton = document.getElementById("clear")
+
+        const clearButton = document.getElementById("clearSearch")
+        clearButton.addEventListener('click', () => {
+            document.getElementById("myInput").value = ""
+        })
+
 
         const geometryLayers = []
-
         const tempCoords = []
+
 
         const img = {
             x: 23622,  // original width of image 
