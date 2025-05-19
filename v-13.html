@@ -127,12 +127,8 @@
         }
 
         #full-map,
-        #idlewild-inset,
-        #brandenlands-inset {
-            position: absolute;
-            z-index: 1000;
-            width: 50px;
-            height: 50px;
+        #idlewild,
+        #brandenlands {
             background-color: white;
             display: flex;
             justify-content: center;
@@ -142,17 +138,12 @@
             cursor: pointer;
             flex-direction: column;
             text-align: center;
-
             border: 1px solid #535353;
+            white-space: nowrap;
+            padding: 5px;
         }
 
-        #button-container {
-            display: flex;
-            gap: 10px;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px;
-        }
+
 
         button {
             padding: 10px;
@@ -376,9 +367,9 @@
         </div>
 
         <div id="container">
-            <div id="full-map">Full Map</div>
-            <!-- <div id="idlewild-inset">Idlewild </div>
-            <div id="brandenlands-inset">Brandenlands </div> -->
+            <div id="full-map">Half-Continent</div>
+            <div id="brandenlands">Brandenlands </div>
+            <div id="idlewild">Idlewild</div>
         </div>
         <div id="map"></div>
 
@@ -404,8 +395,6 @@
             <div id="selectors"></div>
             <div id="info"></div>
         </div>
-
-
 
     </div>
 
@@ -453,8 +442,8 @@
 
         const createPolygon = document.getElementById("create-polygon")
 
-        // const idlewildInset = document.getElementById("idlewild-inset")
-        // const brandenlandsInset = document.getElementById("brandenlands-inset")
+        const idlewildInset = document.getElementById("idlewild")
+        const brandenlandsInset = document.getElementById("brandenlands")
 
         const generateButton = document.getElementById("generate")
         const clearButton = document.getElementById("clear")
@@ -555,8 +544,8 @@
 
         // ------------- SWITCH MAPS -----------------
         fullMap.addEventListener('click', switchToMain)
-        // idlewildInset.addEventListener('click', switchToIdlewildInset)
-        // brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
+        idlewildInset.addEventListener('click', switchToIdlewildInset)
+        brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
 
         // const BrandenlandsInsetPolygon = drawGeometry({
         //     geometry: BrandenlandsInset.geometry,
