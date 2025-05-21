@@ -82,11 +82,6 @@
         }
 
         .autocomplete-items {
-
-            max-height: 500px;
-            overflow-y: auto;
-            overflow-x: hidden;
-
             position: absolute;
             border: 1px solid #d4d4d4;
             border-bottom: none;
@@ -127,8 +122,12 @@
         }
 
         #full-map,
-        #idlewild,
-        #brandenlands {
+        #idlewild-inset,
+        #brandenlands-inset {
+            position: absolute;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
             background-color: white;
             display: flex;
             justify-content: center;
@@ -138,15 +137,16 @@
             cursor: pointer;
             flex-direction: column;
             text-align: center;
-            border: 3px solid transparent;
-            white-space: nowrap;
-            padding: 5px;
-            user-select: none;
+
+            border: 1px solid #535353;
         }
 
-        .active-layer {
-            border: 3px solid green !important;
-            box-sizing: border-box;
+        #button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
         }
 
         button {
@@ -181,192 +181,6 @@
             margin: 10px;
             width: fit-content;
         }
-
-        /* Accordion Styles */
-        #geo-accordion {
-            position: absolute;
-            z-index: 1000;
-            top: 55px;
-            right: 10px;
-            width: 320px;
-            font-family: sans-serif;
-        }
-
-        .accordion-header {
-            background: #f5f5f5;
-            cursor: pointer;
-            padding: 8px 10px;
-            border-radius: 2px;
-            font-weight: bold;
-            user-select: none;
-            border: 1px solid;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: 1px solid black;
-        }
-
-        .accordion-arrow {
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 12px solid #d32f2f;
-            transition: transform 0.3s;
-            margin-right: 8px;
-            transform: rotate(-90deg);
-        }
-
-        .accordion-panel.open~.accordion-header .accordion-arrow,
-        .accordion-header.open .accordion-arrow {
-            transform: rotate(0deg);
-        }
-
-        .accordion-panel {
-            overflow: hidden;
-            max-height: 0;
-            transition: max-height 0.25s linear;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-        }
-
-        .accordion-panel.open {
-            max-height: 500px;
-            transition: max-height 0.35s linear;
-        }
-
-        .checkbox-grid {
-            display: flex;
-            gap: 12px;
-            padding: 16px;
-        }
-
-        .checkbox-col {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .custom-checkbox {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            gap: 8px;
-            font-size: 15px;
-            user-select: none;
-        }
-
-        .custom-checkbox input[type="checkbox"] {
-            display: none;
-        }
-
-        .checkbox-mark {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #b0b0b0;
-            border-radius: 3px;
-            background: #fff;
-            display: inline-block;
-            transition: background 0.2s;
-            box-sizing: border-box;
-            position: relative;
-        }
-
-        .custom-checkbox input[type="checkbox"]:checked+.checkbox-mark {
-            background: #d32f2f;
-            border-color: #d32f2f;
-        }
-
-        .custom-checkbox input[type="checkbox"]:checked+.checkbox-mark::after {
-            content: "";
-            display: block;
-            position: absolute;
-            left: 3px;
-            top: 3px;
-            width: 10px;
-            height: 10px;
-            background: #d32f2f;
-        }
-
-        .custom-checkbox input[type="checkbox"]:not(:checked)+.checkbox-mark {
-            background: #fff;
-            border-color: #b0b0b0;
-        }
-
-        .custom-checkbox input[type="checkbox"]:not(:checked)+.checkbox-mark::after {
-            content: "";
-            display: block;
-            position: absolute;
-            left: 3px;
-            top: 3px;
-            width: 10px;
-            height: 10px;
-            background: #fff;
-        }
-
-        /* Loading Spinner Styles */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(3px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top-color: #d32f2f;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        .loading-text {
-            margin-top: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .loading-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-
-        #clearSearch {
-            display: flex;
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: 1px solid gray;
-            cursor: pointer;
-            padding: 3px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
     </style>
 </head>
 
@@ -374,95 +188,30 @@
 
     <div id="main">
 
-        <!-- Loading Overlay -->
-        <div id="loading-overlay" class="loading-overlay" style="display: none;">
-            <div class="loading-container">
-                <div class="spinner"></div>
-                <div class="loading-text">Loading...</div>
-            </div>
-        </div>
-
         <div id="container">
-            <div id="full-map" class="active-layer">Half-Continent</div>
-            <div id="brandenlands">Brandenlands </div>
-            <div id="idlewild">Idlewild</div>
+            <div id="full-map">Full Map</div>
+            <!-- <div id="idlewild-inset">Idlewild </div>
+            <div id="brandenlands-inset">Brandenlands </div> -->
         </div>
         <div id="map"></div>
 
-        <div class="autocomplete" style="z-index:100000;top:10px; right:10px;position:absolute;width:320px;">
+        <div class="autocomplete" style="z-index:1000;top:10px; right:10px;position:absolute;width:300px;">
             <input id="myInput" style="border:1px solid black; border-radius: 5px;" type="text" name="myCountry"
                 placeholder="Search">
-            <button id="clearSearch">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-
         </div>
-
-        <div id="geo-accordion">
-            <div class="accordion-header">
-                <span class="accordion-arrow"></span>
-                Geographical Type Selection
-            </div>
-            <div class="accordion-panel">
-                <div class="checkbox-grid" id="geo-checkbox-grid">
-                    <!-- JS will populate columns here -->
-                </div>
-            </div>
-        </div>
-
 
         <div id="right" style="display: none;">
             <div id="selectors"></div>
             <div id="info"></div>
         </div>
-
     </div>
 
     <script>
-        const MainLayerFolder = "all_tiles/main"
-        const BrandenlandsLayerFolder = "all_tiles/brandenlands"
-        const IdlewildLayerFolder = "all_tiles/idlewild"
-
-        // Checkbox items
-        const geoItems = [
-            {
-                name: "Regions", tagName: "Region", tileLayer: {
-                    Main: MainLayerFolder + "/regions",
-                    BrandenlandsInset: BrandenlandsLayerFolder + "/regions",
-                    IdlewildInset: IdlewildLayerFolder + "/regions"
-                }, zOrder: 1,
-            },
-            { name: "Roads", tagName: "road", zOrder: 3, },
-
-            { name: "All cities", tagName: "major-cities", zOrder: 4, },
-            { name: "Fortifications", tagName: "major-cities", zOrder: 5, },
-            { name: "Wayhouses", tagName: "major-cities", zOrder: 6, },
-
-
-            { name: "Sea Regions", tagName: "major-cities", zOrder: 7, },
-            {
-                name: "Rivers", tagName: "river", tileLayer: {
-                    Main: MainLayerFolder + "/rivers",
-                    BrandenlandsInset: BrandenlandsLayerFolder + "/rivers",
-                    IdlewildInset: IdlewildLayerFolder + "/rivers"
-                },
-                zOrder: 2,
-            },
-            { name: "Port Cities", tagName: "port-cities", zOrder: 8, },
-            { name: "Islands", tagName: "island", zOrder: 9, },
-            { name: "Costal Waters", tagName: "coastal-waters", zOrder: 10, },
-
-
-
-        ];
 
         const apiUrl = 'https://noblebeast.com/wp-json/glossary-itc/v1/get-glossary-data/';
 
         const geometryList = document.getElementById("geometry-list")
+
 
         const coordsDiv = document.getElementById("coords")
         const info = document.getElementById("info")
@@ -470,20 +219,14 @@
 
         const createPolygon = document.getElementById("create-polygon")
 
-        const idlewildInset = document.getElementById("idlewild")
-        const brandenlandsInset = document.getElementById("brandenlands")
+        // const idlewildInset = document.getElementById("idlewild-inset")
+        // const brandenlandsInset = document.getElementById("brandenlands-inset")
 
         const generateButton = document.getElementById("generate")
-
-        const clearButton = document.getElementById("clearSearch")
-        clearButton.addEventListener('click', () => {
-            document.getElementById("myInput").value = ""
-        })
-
+        const clearButton = document.getElementById("clear")
 
         const geometryLayers = []
         const tempCoords = []
-
 
         const img = {
             x: 23622,  // original width of image 
@@ -501,10 +244,6 @@
             tileLayer: mapTilesNames.main,
             editLayerId: null,
             selectors: [],
-            overlays: [],
-            selectedTypes: [],
-            imageOverlays: [],
-            searchBoxGeometry: [],
             //editMode: false //if edit move disable all interactions till save cancel delete
         }
 
@@ -516,8 +255,8 @@
                 { x: 11070, y: 9902 },
             ],
             img: { x: 2506, y: 2715 },
-            tiles: BrandenlandsLayerFolder + "/base/{z}/{x}/{y}.png"
-        };
+            tiles: "tiles_brandenlands/{z}/{x}/{y}.png"
+        }
 
         const IdlewildInset = {
             geometry: [
@@ -529,7 +268,7 @@
                 { x: 11718, y: 9902 }
             ],
             img: { x: 4961, y: 3307 },
-            tiles: IdlewildLayerFolder + "/base/{z}/{x}/{y}.png"
+            tiles: "tiles_idlewild/{z}/{x}/{y}.png"
         }
 
         // create the map
@@ -553,7 +292,7 @@
         map.setView(rc.unproject([img.x / 2, img.y / 2]), 2)
         map.setZoom(2)
 
-        const tileLayer = L.tileLayer(MainLayerFolder + '/base/{z}/{x}/{y}.png', {
+        const tileLayer = L.tileLayer('tiles/{z}/{x}/{y}.png', {
             noWrap: true,
             preferCanvas: true,
             bounds: mapBounds
@@ -577,26 +316,26 @@
 
         // ------------- SWITCH MAPS -----------------
         fullMap.addEventListener('click', switchToMain)
-        idlewildInset.addEventListener('click', switchToIdlewildInset)
-        brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
+        // idlewildInset.addEventListener('click', switchToIdlewildInset)
+        // brandenlandsInset.addEventListener('click', switchToBrandenlandsInset)
 
-        // const BrandenlandsInsetPolygon = drawGeometry({
-        //     geometry: BrandenlandsInset.geometry,
-        //     color: "#e2d5e9",
-        //     type: "polygon",
-        //     fit: false,
-        //     stroke: "red"
-        // }, false)
-        // BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
+        const BrandenlandsInsetPolygon = drawGeometry({
+            geometry: BrandenlandsInset.geometry,
+            color: "#e2d5e9",
+            type: "polygon",
+            fit: false,
+            stroke: "red"
+        }, false)
+        BrandenlandsInsetPolygon.on('click', switchToBrandenlandsInset)
 
-        // const IdlewildInsetPolygon = drawGeometry({
-        //     geometry: IdlewildInset.geometry,
-        //     color: "#c9e2d4",
-        //     type: "polygon",
-        //     fit: false,
-        //     stroke: "red"
-        // }, false)
-        // IdlewildInsetPolygon.on('click', switchToIdlewildInset)
+        const IdlewildInsetPolygon = drawGeometry({
+            geometry: IdlewildInset.geometry,
+            color: "#c9e2d4",
+            type: "polygon",
+            fit: false,
+            stroke: "red"
+        }, false)
+        IdlewildInsetPolygon.on('click', switchToIdlewildInset)
 
         function switchToIdlewildInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -613,25 +352,15 @@
             map.fitBounds(mapBounds);
             tileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
-            // BrandenlandsInsetPolygon.remove()
-            // IdlewildInsetPolygon.remove()
+            BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
 
             IdlewildInsetTileLayer.addTo(map)
 
 
             appData.tileLayer = mapTilesNames.IdlewildInset
 
-            clearOverlays({}) // clear all overlays
-            clearSearchGeometry()
             drawAllItems()
-
-            //redraw additional tiles
-            drawGeographicalSelections()
-
-            idlewildInset.classList.add("active-layer")
-            brandenlandsInset.classList.remove("active-layer")
-            fullMap.classList.remove("active-layer")
-
         }
         function switchToBrandenlandsInset() {
             geometryLayers.forEach(l => l.removable && l.geom.remove())
@@ -648,27 +377,17 @@
             map.fitBounds(mapBounds);
             tileLayer.remove()
             IdlewildInsetTileLayer.remove()
-
-            // IdlewildInsetPolygon.remove()
-            // BrandenlandsInsetPolygon.remove()
+            IdlewildInsetPolygon.remove()
+            BrandenlandsInsetPolygon.remove()
 
             BrandenlandsInsetTileLayer.addTo(map)
 
             appData.tileLayer = mapTilesNames.BrandenlandsInset
 
-            clearOverlays({}) // clear all overlays
-            clearSearchGeometry()
             drawAllItems()
-
-            //redraw additional tiles
-            drawGeographicalSelections()
-
-            brandenlandsInset.classList.add("active-layer")
-            idlewildInset.classList.remove("active-layer")
-            fullMap.classList.remove("active-layer")
-
         }
         function switchToMain() {
+
             tileLayer.setUrl('tiles/{z}/{x}/{y}.png')
             const rc = new L.RasterCoords(map, [img.x, img.y])
             const mapBounds = new L.LatLngBounds(
@@ -684,24 +403,15 @@
             IdlewildInsetTileLayer.remove()
             BrandenlandsInsetTileLayer.remove()
 
-            // IdlewildInsetPolygon.addTo(map)
-            // BrandenlandsInsetPolygon.addTo(map)
+            IdlewildInsetPolygon.addTo(map)
+            BrandenlandsInsetPolygon.addTo(map)
 
             geometryLayers.forEach(l => l.removable && l.geom.remove())
             geometryLayers.length = 0
 
             appData.tileLayer = mapTilesNames.main
 
-            clearOverlays({}) // clear all overlays
-            clearSearchGeometry() // clear all geometry
             drawAllItems()
-
-            //redraw additional tiles
-            drawGeographicalSelections()
-
-            fullMap.classList.add("active-layer")
-            brandenlandsInset.classList.remove("active-layer")
-            idlewildInset.classList.remove("active-layer")
         }
 
         function unproject(arr) {
@@ -743,12 +453,6 @@
 
         }
 
-        function clearSearchGeometry() {
-            appData.searchBoxGeometry.forEach(l => l.removable && l.geom.remove())
-            appData.searchBoxGeometry.length = 0
-            return;
-        }
-
         function getCoordinates(event) {
             const layer = event.layer;
             const shapes = layer.toGeoJSON();
@@ -763,14 +467,55 @@
         }
 
 
+
+        function buildTypeSelectors() {
+
+            const types = [
+                { name: 'none', label: "Clear" },
+                { name: 'marker', label: "Location" },
+                { name: 'polygon', label: "Region" },
+                { name: 'line', label: "Path" }
+            ]
+            const container = document.getElementById("selectors")
+
+            return types.map(type => {
+                const input = document.createElement("input")
+                input.type = "radio"
+                input.name = "type"
+                input.value = type.name
+                input.checked = type.name === 'marker'
+                input.id = type.name
+                input.addEventListener("change", () => {
+                    appData.type = type.name
+                    drawAllItems()
+                })
+
+                const label = document.createElement("label")
+                label.htmlFor = type.name
+                label.innerText = type.label
+
+                const div = document.createElement("div")
+                div.appendChild(input)
+                div.appendChild(label)
+
+                container.appendChild(div)
+
+                return { name: type.name, input }
+            })
+
+        }
+
+
         function autocomplete(inp, arr) {
+
+
 
             /*the autocomplete function takes two arguments,
             the text field element and an array of possible autocompleted values:*/
             var currentFocus;
             /*execute a function when someone writes in the text field:*/
             inp.addEventListener("input", function (e) {
-
+                console.log('11', arr);
                 var a, b, i, val = this.value;
                 /*close any already open lists of autocompleted values*/
                 closeAllLists();
@@ -782,7 +527,6 @@
                 a.setAttribute("class", "autocomplete-items");
                 /*append the DIV element as a child of the autocomplete container:*/
                 this.parentNode.appendChild(a);
-
                 /*for each item in the array...*/
                 for (i = 0; i < arr.length; i++) {
                     /*check if the item starts with the same letters as the text field value:*/
@@ -810,6 +554,7 @@
 
                             const result = arr.find(s => s.id == id)
                             result && showItemOnMap(result)
+
 
                             closeAllLists();
                         });
@@ -875,7 +620,6 @@
             });
         }
 
-
         async function showItemOnMap(result) {
 
             console.log('result', result);
@@ -886,14 +630,16 @@
                 }, "*");
             }
 
+            drawItem(null)//clear prev geometry
 
-            if (result && result.meta.glossary_map_json) {
-                const resJson = result.meta.glossary_map_json
+            if (result && result.meta.glossary_map_json.length > 1) {
+                const resData = result.meta.glossary_map_json
+                const resJson = JSON.parse(resData)
                 if (!resJson) {
                     console.warn('No Data!!!');
                     return;
                 }
-                const { geometry, type, tileLayer } = resJson
+                const { x, y, color, info, geometry, type, tileLayer } = resJson
 
                 if (tileLayer !== appData.tileLayer) {
                     switch (tileLayer) {
@@ -924,21 +670,15 @@
                         mapBounds.extend(rc.unproject([c.x, c.y]))
                         return rc.unproject([c.x, c.y])
                     })
+
                     map.fitBounds(mapBounds);
-                    //appData.selectors.find(s => s.name === type).input.click()
+
+                    appData.selectors.find(s => s.name === type).input.click()
+
                     drawItem(result.id)
                 }
             }
 
-            if (result.featured_image && result.featured_image.length > 5) {
-                //IT IS AN OVERLAY
-                const overlay = displayImageOverlay({
-                    imageUrl: result.featured_image,
-                    type: "search"
-                })
-                geometryLayers.push({ id: uuid(), geom: overlay, removable: true })
-                return;
-            }
 
         }
 
@@ -956,9 +696,6 @@
                 idParam = `id=${id}`
             }
 
-            // Initialize with loading state
-            showLoading();
-
             fetch(apiUrl + `?time=${new Date().getTime()}`, {
                 method: 'GET',
                 headers: {
@@ -969,14 +706,9 @@
                 .then(response => response.json())
                 .then(json => {
                     const { data } = json
-
                     appData.data = data
-                    appData.data.forEach(item => {
-                        // console.log('', item.meta.glossary_map_json);
-                        item.meta.glossary_map_json = item.meta.glossary_map_json && JSON.parse(item.meta.glossary_map_json)
-                        item.tags = item.tags.map(i => i.toLowerCase())
-                    })
 
+                    appData.selectors = buildTypeSelectors()
                     autocomplete(document.getElementById("myInput"), data);
                     drawAllItems()
 
@@ -984,13 +716,7 @@
                         const resJson = data.find(d => d.id == id)
                         showItemOnMap(resJson)
                     }
-
-                    hideLoading();
                 })
-                .catch(error => {
-                    console.error("Error fetching data:", error);
-                    hideLoading();
-                });
         }
 
         //* Highlights a specific layer on the map and dims all others.
@@ -1014,26 +740,26 @@
 
         function drawItem(objectId) {
 
-            console.log('drawItem', objectId);
-
-            appData.searchBoxGeometry.forEach(l => l.removable && l.geom.remove())
-            appData.searchBoxGeometry.length = 0
+            console.log('objectId', objectId);
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
 
             if (objectId === null || !objectId) return;
 
             const geometryData = []
             appData.data.forEach(item => {
-                if (item.meta.glossary_map_json.type) {
+                if (item.meta.glossary_map_json.length > 1) {
 
                     geometryData.push({
                         id: item.id,
                         name: item.title,
                         info: item.content,
-                        featured_image: item.featured_image,
-                        ...item.meta.glossary_map_json
+                        ...JSON.parse(item.meta.glossary_map_json)
                     })
                 }
             })
+
+            console.log('drawItem', objectId, geometryData);
 
             geometryData
                 .filter(geom => {
@@ -1048,224 +774,12 @@
                 .filter(geom => geom.id === objectId)
                 .forEach(d => {
 
+                    console.log('d', d);
 
-                    const { id, name, info, type, geometry, tileLayer, color: initialColor, featured_image } = d;
+                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
                     const color = initialColor ?? 'red';
 
-
-                    if (featured_image && featured_image != "") {
-                        const overlay = displayImageOverlay({
-                            imageUrl: featured_image,
-                            type: "search"
-                        })
-                        appData.searchBoxGeometry.push({ id, geom: overlay, removable: true })
-                        return;
-                    }
-
-                    const unpCoords = geometry.map(c => {
-                        return rc.unproject([c.x, c.y])
-                    })
-
-
-                    if (type === 'marker') {
-
-                        const point = L.circle(unpCoords[0], {
-                            id,
-                            color,
-                            originalColor: color,
-                            radius: 0.5,
-                            "fillOpacity": 0.5,
-                            "opacity": 0.5,
-                            pmIgnore: true
-                        }).addTo(map);
-
-                        point.addEventListener("click", () => {
-                            appData.editLayerId = id
-
-                            emphasizeItem(id)
-
-                        })
-                        appData.searchBoxGeometry.push({ id, geom: point, removable: true })
-                    }
-
-                    if (type === 'polygon') {
-                        const polygon = L.polygon(unpCoords, {
-                            id,
-                            fillColor: color,
-                            originalColor: color,
-                            weight: 2,
-                            opacity: 1,
-                            color: color,  //Outline color
-                            fillOpacity: 0.5,
-                            pmIgnore: true
-                        }).addTo(map);
-                        polygon.addEventListener("click", () => {
-                            appData.editLayerId = id
-                            emphasizeItem(id)
-                        })
-                        appData.searchBoxGeometry.push({ id, geom: polygon, removable: true })
-                    }
-
-                    if (type === 'line') {
-                        const line = L.polyline(unpCoords, {
-                            id,
-                            color,
-                            originalColor: color,
-                            "fillOpacity": 1,
-                            "opacity": 1,
-                            "weight": 5,
-                            pmIgnore: true
-                        }).addTo(map);
-                        line.addEventListener("click", () => {
-                            appData.editLayerId = id
-                            emphasizeItem(id)
-                        })
-                        appData.searchBoxGeometry.push({ id, geom: line, removable: true })
-                    }
-                })
-
-            // Create bounds to fit the current item
-            if (appData.searchBoxGeometry.length > 0) {
-                const mapBounds = L.latLngBounds();
-
-                appData.searchBoxGeometry.forEach(layer => {
-                    mapBounds.extend(layer.geom.getBounds())
-                });
-
-                const padding = [50, 50];
-
-                // Fit the map to these bounds with animation
-                if (!mapBounds.isValid()) return;
-                map.fitBounds(mapBounds, {
-                    padding: padding,
-                    animate: true,
-                    duration: 0.5
-                });
-            }
-        }
-
-
-        function drawGeographicalSelections() {
-
-            console.log('drawGeographicalSelections appData.', appData.selectedTypes);
-
-            const geometryData = []
-            const tilesLayers = []
-
-            appData.selectedTypes.forEach(tagName => {
-
-                const geoItem = geoItems.find(i => i.tagName.toLocaleLowerCase() === tagName)
-                const tileLayerName = geoItem.tileLayer || ""
-
-                if (tileLayerName !== "") {
-                    tilesLayers.push(geoItem)
-                    return;
-                }
-
-                appData.data
-                    .filter(item => {
-                        return item.tags.some(item => item.includes(tagName)) &&
-                            item.meta.glossary_map_json.type !== ""
-                    })
-                    .filter(item => {
-                        // FILETR BY tag names
-                        if (geoItem.shouldIncludeThisTags && geoItem.shouldIncludeThisTags.length > 0) {
-                            const includes = arrayIncludesAny(item.tags, geoItem.shouldIncludeThisTags);
-                            return includes
-                        }
-                        return true
-
-                    })
-                    .forEach(item => {
-                        const geo = item.meta.glossary_map_json
-                        const featured_image = item.featured_image
-                        //get layer type name - tiles or geometry from geoItems by tagName
-
-                        if (geo.type !== "" || featured_image != "") {
-
-                            geometryData.push({
-                                id: item.id,
-                                name: item.title,
-                                info: item.content,
-                                tags: item.tags,
-                                tags_: tagName,
-                                featured_image,
-                                zOrder: geoItem.zOrder,
-                                geoItem: geoItem,
-                                ...item.meta.glossary_map_json
-                            })
-                        }
-                    })
-            })
-
-            console.log('geometryData', geometryData);
-            console.log('tilesLayers', tilesLayers);
-
-            //CLEAR ALL LAYERS
-            clearOverlays({ type: "tileLayer" })
-
-            // Fix for v-12.html
-            if (tilesLayers.length > 0) {
-                tilesLayers.forEach(layer => {
-                    console.log('layer', layer);
-
-                    const { tileLayer, zOrder } = layer
-                    const mainLayerName = appData.tileLayer
-                    const selectedLayer = tileLayer[mainLayerName]
-
-                    if (selectedLayer === "") {
-                        console.warn('No tile layer for this main layer ' + mainLayerName);
-                        return;
-                    }
-
-                    // Remove custom pane creation
-                    // Just use zIndex property directly
-
-                    const mapTileLayer = L.tileLayer(selectedLayer + '/{z}/{x}/{y}.png', {
-                        noWrap: true,
-                        preferCanvas: true,
-                        bounds: mapBounds,
-                        opacity: 1,
-                        maxNativeZoom: 4,
-                        maxZoom: 7,
-                        zIndex: 650 + zOrder
-                    })
-                    mapTileLayer.addTo(map);
-
-                    // Store reference to remove later
-                    appData.imageOverlays.push({
-                        imageOverlay: mapTileLayer,
-                        type: 'tileLayer',
-                        tagName: selectedLayer
-                    });
-                })
-            }
-
-            geometryLayers.forEach(l => l.removable && l.geom.remove())
-            geometryLayers.length = 0
-
-            console.log('===>>>', geometryData.filter(d => d.overlayImage));
-
-            geometryData
-                .sort((a, b) => b.zOrder - a.zOrder)
-                .filter(tileLayer => {
-                    return tileLayer.tileLayer === appData.tileLayer
-                })
-                .forEach(d => {
-
-                    const { id, name, featured_image, info, type, geometry, tileLayer, color: initialColor, zOrder } = d;
-                    const color = initialColor ?? 'red';
-
-                    if (featured_image && featured_image != "") {
-                        console.log('d', d);
-                        const overlay = displayImageOverlay({
-                            imageUrl: featured_image,
-                            zIndex: zOrder,
-                            type: "tileLayer"
-                        });
-                        geometryLayers.push({ id, geom: overlay, removable: true })
-                        return;
-                    }
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
 
                     const unpCoords = geometry.map(c => {
                         return rc.unproject([c.x, c.y])
@@ -1311,7 +825,6 @@
                     }
 
                     if (type === 'line') {
-                        console.log('LINEEEEEE',);
                         const line = L.polyline(unpCoords, {
                             id,
                             color,
@@ -1332,203 +845,172 @@
 
         function drawAllItems() {
             return;
-        }
+            geometryLayers.forEach(l => l.removable && l.geom.remove())
+            geometryLayers.length = 0
 
-        const header = document.querySelector('#geo-accordion .accordion-header');
-        const panel = document.querySelector('#geo-accordion .accordion-panel');
-        const arrow = header.querySelector('.accordion-arrow');
-        header.addEventListener('click', () => {
-            panel.classList.toggle('open');
-            header.classList.toggle('open');
-        });
+            const geometryData = []
+            appData.data.forEach(item => {
+                if (item.meta.glossary_map_json.length > 1) {
 
-
-        // Split into two columns
-        const col1 = geoItems.slice(0, 5);
-        const col2 = geoItems.slice(5);
-
-        function createCheckbox(itemObj) {
-            const label = document.createElement('label');
-            label.className = 'custom-checkbox';
-
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.checked = false
-
-            // Update selectedGeoItems on change
-            input.addEventListener('change', function () {
-                const tagName = itemObj.tagName.toLowerCase()
-                if (this.checked) {
-                    if (!appData.selectedTypes.includes(tagName)) {
-                        appData.selectedTypes.push(tagName);
-                    }
-                } else {
-                    appData.selectedTypes = appData.selectedTypes.filter(item => item !== tagName);
+                    geometryData.push({
+                        id: item.id,
+                        name: item.title,
+                        info: item.content,
+                        ...JSON.parse(item.meta.glossary_map_json)
+                    })
                 }
-                drawGeographicalSelections()
-            });
+            })
 
-            const span = document.createElement('span');
-            span.className = 'checkbox-mark';
+            console.log('geometryData', geometryData);
 
-            label.appendChild(input);
-            label.appendChild(span);
-            label.appendChild(document.createTextNode(itemObj.name));
-            return label;
-        }
-
-        const grid = document.getElementById('geo-checkbox-grid');
-        grid.innerHTML = ''; // Clear if any
-
-        [col1, col2].forEach(colItems => {
-            const colDiv = document.createElement('div');
-            colDiv.className = 'checkbox-col';
-            colItems.forEach(item => {
-                colDiv.appendChild(createCheckbox(item));
-            });
-            grid.appendChild(colDiv);
-        });
-
-
-        function clearOverlays({ type }) {
-            console.log('clearOverlays', type);
-            if (type && type !== "all") {
-                appData.imageOverlays.forEach(overlay => {
-                    if (overlay.type === type) {
-                        overlay.imageOverlay.remove()
+            geometryData
+                .filter(geom => {
+                    if (appData.type && appData.type !== "") {
+                        return geom.type === appData.type
+                    }
+                    else {
+                        return true
                     }
                 })
-                appData.imageOverlays = appData.imageOverlays.filter(overlay => overlay.type !== type)
-                return;
-            } else {
-                appData.imageOverlays.forEach(overlay => {
-                    overlay.imageOverlay.remove()
+                .filter(tileLayer => tileLayer.tileLayer === appData.tileLayer)
+                .forEach(d => {
+
+                    console.log('d', d);
+
+                    const { id, name, info, type, geometry, tileLayer, color: initialColor } = d;
+                    const color = initialColor ?? 'red';
+
+                    console.log('id, name, info, type, geometry', id, name, info, type, geometry);
+
+                    const unpCoords = geometry.map(c => {
+                        return rc.unproject([c.x, c.y])
+                    })
+
+                    if (type === 'marker') {
+
+                        const point = L.circle(unpCoords[0], {
+                            id,
+                            color,
+                            originalColor: color,
+                            radius: 0.5,
+                            "fillOpacity": 0.5,
+                            "opacity": 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+
+                        point.addEventListener("click", () => {
+                            appData.editLayerId = id
+
+                            emphasizeItem(id)
+
+                        })
+                        geometryLayers.push({ id, geom: point, removable: true })
+                    }
+
+                    if (type === 'polygon') {
+                        const polygon = L.polygon(unpCoords, {
+                            id,
+                            fillColor: color,
+                            originalColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: color,  //Outline color
+                            fillOpacity: 0.5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        polygon.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: polygon, removable: true })
+                    }
+
+                    if (type === 'line') {
+                        const line = L.polyline(unpCoords, {
+                            id,
+                            color,
+                            originalColor: color,
+                            "fillOpacity": 1,
+                            "opacity": 1,
+                            "weight": 5,
+                            pmIgnore: true
+                        }).addTo(map);
+                        line.addEventListener("click", () => {
+                            appData.editLayerId = id
+                            emphasizeItem(id)
+                        })
+                        geometryLayers.push({ id, geom: line, removable: true })
+                    }
                 })
-                appData.imageOverlays = []
-            }
         }
 
-        // function rebuildOverlays() {
-        //     clearOverlays()
-        //     appData.overlays.forEach(overlay => {
-        //         const { id, name, tags, featured_image } = overlay
-        //         const isChecked = appData.selectedTypes.some(type => tags.map(v => v.toLowerCase()).includes(type.toLowerCase()))
-        //         // console.log('overlay', overlay);
-        //         if (isChecked) {
-        //             displayImageOverlay(featured_image)
-        //         }
-        //     })
+        // function generateEditor({
+        //     id,
+        //     type,
+        //     name,
+        //     info,
+        // }) {
+        //     const container = document.createElement("div")
+        //     container.className = "container-column"
+
+        //     const nameInput = document.createElement("div")
+        //     nameInput.style.fontWeight = "bold"
+        //     nameInput.innerHTML = name
+
+        //     const infoArea = document.createElement("div")
+        //     infoArea.innerHTML = info
+
+
+        //     container.appendChild(nameInput)
+        //     container.appendChild(infoArea)
+
+        //     editorDiv.innerHTML = ''
+        //     editorDiv.appendChild(container)
+
+        //     return { editorDiv, container }
         // }
 
-        function displayImageOverlay({ imageUrl, zIndex = 1, type }) {
+        function modalAlert({ del, cancel }) {
+            const modal = document.createElement("div")
+            modal.style = "z-index:1000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;"
 
-            console.log('displayImageOverlay', imageUrl);
-            // Extract filename from URL
-            const filename = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
-            // Extract values using regex
-            const match = filename.match(/_x-(\d+)_y-(\d+)_w-(\d+)_h-(\d+)/);
+            const container = document.createElement("div")
+            container.style = "display:flex; gap:10px; flex-direction:column;  background-color: white; padding: 20px; border-radius: 5px;gap"
 
-            if (!match) {
-                console.error("Could not parse coordinates from image URL:", imageUrl);
-                return;
-            }
+            const text = document.createElement("div")
+            text.innerText = "Are you sure you want to delete?"
+            container.appendChild(text)
 
-            const [, xStr, yStr, widthStr, heightStr] = match;
-            const x = parseInt(xStr, 10);
-            const y = parseInt(yStr, 10);
-            const width = parseInt(widthStr, 10);
-            const height = parseInt(heightStr, 10);
+            const buttonContainer = document.createElement("div")
+            buttonContainer.style = "display:flex; gap:10px; flex-direction:row; justify-content: center;"
 
-            if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) {
-                console.error("Parsed coordinates are not valid numbers:", { x, y, width, height });
-                return;
-            }
+            const okButton = document.createElement("button")
+            okButton.innerText = "Delete"
+            okButton.style.flex = 1
+            okButton.addEventListener("click", () => {
+                del && del()
+                modal.remove()
+            })
 
-            // Unproject corners for Leaflet
-            const overlayTopLeft = rc.unproject([x, y]);
-            const overlayBottomRight = rc.unproject([x + width, y + height]);
-            const overlayBounds = L.latLngBounds(overlayTopLeft, overlayBottomRight);
+            const cancelButton = document.createElement("button")
+            cancelButton.innerText = "Cancel"
+            cancelButton.style.flex = 1
+            cancelButton.addEventListener("click", () => {
+                cancel && cancel()
+                modal.remove()
+            })
 
-            console.log('zIndex', zIndex);
-            // Create the overlay with zIndex option
-            const imageOverlay = L.imageOverlay(
-                imageUrl,
-                overlayBounds,
-                {
-                    opacity: 1,
-                    zIndex: zIndex  // Set the z-index here
-                }
-            );
+            buttonContainer.appendChild(okButton)
+            buttonContainer.appendChild(cancelButton)
+            container.appendChild(buttonContainer)
 
-            imageOverlay.addTo(map);
+            modal.appendChild(container)
 
-            // No need for bringToBack() as we're using zIndex now
-
-            appData.imageOverlays.push({ imageOverlay, zIndex, type: type });
-
-            return imageOverlay;
-        }
-
-        // Loading functions
-        function showLoading() {
-            document.getElementById('loading-overlay').style.display = 'flex';
-        }
-
-        function hideLoading() {
-            document.getElementById('loading-overlay').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('loading-overlay').style.display = 'none';
-                document.getElementById('loading-overlay').style.opacity = '1';
-            }, 300);
+            document.body.appendChild(modal)
         }
 
 
-        function removeAllCustomPanes() {
-            const panes = map.getPanes();
 
-            // Default pane names that shouldn't be removed
-            const defaultPanes = [
-                'mapPane',
-                'tilePane',
-                'overlayPane',
-                'shadowPane',
-                'markerPane',
-                'tooltipPane',
-                'popupPane'
-            ];
-
-            for (const paneName in panes) {
-                if (!defaultPanes.includes(paneName)) {
-                    const pane = panes[paneName];
-
-                    if (pane && pane.parentNode) {
-                        pane.parentNode.removeChild(pane);
-                    }
-
-                    if (map._panes && map._panes[paneName]) {
-                        delete map._panes[paneName];
-                    }
-
-                    if (map._paneRenderers && map._paneRenderers[paneName]) {
-                        delete map._paneRenderers[paneName];
-                    }
-                }
-            }
-        }
-
-
-        function arrayIncludesAny(array1, array2) {
-            return array2.some(item => array1.includes(item));
-        }
-
-        // generate a RFC-4122 v4 UUID
-        function uuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                const r = (Math.random() * 16) | 0;
-                const v = c === 'x' ? r : (r & 0x3) | 0x8;
-                return v.toString(16);
-            });
-        }
     </script>
 
 
