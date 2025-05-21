@@ -436,6 +436,14 @@
                     IdlewildInset: IdlewildLayerFolder + "/regions"
                 }, zOrder: 1,
             },
+            { name: "Roads", tagName: "road", zOrder: 3, },
+
+            { name: "All cities", tagName: "major-cities", zOrder: 4, },
+            { name: "Fortifications", tagName: "major-cities", zOrder: 5, },
+            { name: "Wayhouses", tagName: "major-cities", zOrder: 6, },
+
+
+            { name: "Sea Regions", tagName: "major-cities", zOrder: 7, },
             {
                 name: "Rivers", tagName: "river", tileLayer: {
                     Main: MainLayerFolder + "/rivers",
@@ -444,16 +452,12 @@
                 },
                 zOrder: 2,
             },
-            { name: "Roads", tagName: "road", zOrder: 3, },
-            { name: "Major Cities", tagName: "major-cities", zOrder: 4, },
-            { name: "Minor Cities", tagName: "minor-cities", zOrder: 5, },
-            { name: "Settlements", tagName: "settlements", zOrder: 6, },
-            { name: "Battlegrounds", tagName: "battlegrounds", zOrder: 7, },
-            { name: "Fortresses", tagName: "fortresses", zOrder: 8, },
-            { name: "Cot Houses", tagName: "cot-houses", zOrder: 9, },
-            { name: "River Gates", tagName: "river-gates", zOrder: 10, },
-            { name: "Ocean Regions", tagName: "ocean-regions", zOrder: 11, },
-            { name: "Port Cities", tagName: "port-cities", zOrder: 12, }
+            { name: "Port Cities", tagName: "port-cities", zOrder: 8, },
+            { name: "Islands", tagName: "island", zOrder: 9, },
+            { name: "Costal Waters", tagName: "coastal-waters", zOrder: 10, },
+
+
+
         ];
 
         const apiUrl = 'https://noblebeast.com/wp-json/glossary-itc/v1/get-glossary-data/';
@@ -1340,8 +1344,8 @@
 
 
         // Split into two columns
-        const col1 = geoItems.slice(0, 6);
-        const col2 = geoItems.slice(6);
+        const col1 = geoItems.slice(0, 5);
+        const col2 = geoItems.slice(5);
 
         function createCheckbox(itemObj) {
             const label = document.createElement('label');
