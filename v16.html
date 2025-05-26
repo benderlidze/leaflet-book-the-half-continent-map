@@ -440,7 +440,7 @@
                 name: "Roads", tagName: "road", tileLayer: {
                     Main: MainLayerFolder + "/roads",
                     BrandenlandsInset: "",
-                    IdlewildInset: ""
+                    IdlewildInset: IdlewildLayerFolder + "/roads"
                 }, zOrder: 3
             },
 
@@ -459,7 +459,13 @@
                 zOrder: 2,
             },
             { name: "Port Cities", tagName: "port-cities", zOrder: 8, },
-            { name: "Islands", tagName: "island", zOrder: 9, },
+            {
+                name: "Islands", tagName: "island", tileLayer: {
+                    Main: MainLayerFolder + "/islands",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                }, zOrder: 9,
+            },
             { name: "Costal Waters", tagName: "coastal-waters", zOrder: 10, },
 
 
