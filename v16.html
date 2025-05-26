@@ -527,7 +527,7 @@
                 { x: 11070, y: 10761 },
                 { x: 11070, y: 9902 },
             ],
-            img: { x: 2506, y: 2715 },
+            img: { x: 20000, y: 21668 },
             tiles: BrandenlandsLayerFolder + "/base/{z}/{x}/{y}.png"
         };
 
@@ -540,7 +540,7 @@
                 { x: 11718, y: 10320 },
                 { x: 11718, y: 9902 }
             ],
-            img: { x: 4961, y: 3307 },
+            img: { x: 20000, y: 13332 },
             tiles: IdlewildLayerFolder + "/base/{z}/{x}/{y}.png"
         }
 
@@ -1527,7 +1527,10 @@
                 }
             }
         }
+
+
         // Add map click event to display coordinates
+        /*
         map.on('click', function (e) {
             // Get the clicked point coordinates in the original image coordinate system
             const point = rc.project(e.latlng);
@@ -1564,6 +1567,7 @@
             // Log coordinates to console
             console.log(`Clicked at coordinates: X: ${x}, Y: ${y}`);
         });
+        */
 
         function arrayIncludesAny(array1, array2) {
             return array2.some(item => array1.includes(item));
