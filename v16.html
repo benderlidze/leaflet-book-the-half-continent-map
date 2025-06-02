@@ -444,8 +444,21 @@
                 }, zOrder: 3
             },
 
-            { name: "All cities", tagName: "major-cities", zOrder: 4, },
-            { name: "Fortifications", tagName: "major-cities", zOrder: 5, },
+            {
+                name: "All cities", tagName: "major-cities", zOrder: 4, tileLayer: {
+                    Main: MainLayerFolder + "/allcities",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                },
+            },
+            {
+                name: "Fortifications", tagName: "fortifications", zOrder: 5,
+                tileLayer: {
+                    Main: MainLayerFolder + "/fortifications",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                },
+            },
             { name: "Wayhouses", tagName: "major-cities", zOrder: 6, },
 
 
@@ -458,7 +471,13 @@
                 },
                 zOrder: 2,
             },
-            { name: "Port Cities", tagName: "port-cities", zOrder: 8, },
+            {
+                name: "Port Cities", tagName: "port-cities", zOrder: 8, tileLayer: {
+                    Main: MainLayerFolder + "/port-cities",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                },
+            },
             {
                 name: "Islands", tagName: "island", tileLayer: {
                     Main: MainLayerFolder + "/islands",
@@ -568,7 +587,9 @@
         const tileLayer = L.tileLayer(MainLayerFolder + '/base/{z}/{x}/{y}.png', {
             noWrap: true,
             preferCanvas: true,
-            bounds: mapBounds
+            bounds: mapBounds,
+            maxNativeZoom: 7,
+            maxZoom: 7
         }).addTo(map)
 
         const BrandenlandsInsetTileLayer = L.tileLayer(BrandenlandsInset.tiles, {
@@ -1238,7 +1259,7 @@
                         preferCanvas: true,
                         bounds: mapBounds,
                         opacity: 1,
-                        maxNativeZoom: 4,
+                        maxNativeZoom: 5,
                         maxZoom: 7,
                         zIndex: 650 + zOrder
                     })
