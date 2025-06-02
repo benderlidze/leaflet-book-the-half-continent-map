@@ -436,10 +436,29 @@
                     IdlewildInset: IdlewildLayerFolder + "/regions"
                 }, zOrder: 1,
             },
-            { name: "Roads", tagName: "road", zOrder: 3, },
+            {
+                name: "Roads", tagName: "road", tileLayer: {
+                    Main: MainLayerFolder + "/roads",
+                    BrandenlandsInset: "",
+                    IdlewildInset: IdlewildLayerFolder + "/roads"
+                }, zOrder: 3
+            },
 
-            { name: "All cities", tagName: "major-cities", zOrder: 4, },
-            { name: "Fortifications", tagName: "major-cities", zOrder: 5, },
+            {
+                name: "All cities", tagName: "major-cities", zOrder: 4, tileLayer: {
+                    Main: MainLayerFolder + "/allcities",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                },
+            },
+            {
+                name: "Fortifications", tagName: "fortifications", zOrder: 5,
+                tileLayer: {
+                    Main: MainLayerFolder + "/fortifications",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                },
+            },
             { name: "Wayhouses", tagName: "major-cities", zOrder: 6, },
 
 
@@ -452,8 +471,20 @@
                 },
                 zOrder: 2,
             },
-            { name: "Port Cities", tagName: "port-cities", zOrder: 8, },
-            { name: "Islands", tagName: "island", zOrder: 9, },
+            {
+                name: "Port Cities", tagName: "port-cities", zOrder: 8, tileLayer: {
+                    Main: MainLayerFolder + "/port-cities",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                },
+            },
+            {
+                name: "Islands", tagName: "island", tileLayer: {
+                    Main: MainLayerFolder + "/islands",
+                    BrandenlandsInset: "",
+                    IdlewildInset: ""
+                }, zOrder: 9,
+            },
             { name: "Costal Waters", tagName: "coastal-waters", zOrder: 10, },
 
 
@@ -515,7 +546,7 @@
                 { x: 11070, y: 10761 },
                 { x: 11070, y: 9902 },
             ],
-            img: { x: 2506, y: 2715 },
+            img: { x: 20000, y: 21668 },
             tiles: BrandenlandsLayerFolder + "/base/{z}/{x}/{y}.png"
         };
 
@@ -528,7 +559,7 @@
                 { x: 11718, y: 10320 },
                 { x: 11718, y: 9902 }
             ],
-            img: { x: 4961, y: 3307 },
+            img: { x: 20000, y: 13332 },
             tiles: IdlewildLayerFolder + "/base/{z}/{x}/{y}.png"
         }
 
@@ -556,7 +587,9 @@
         const tileLayer = L.tileLayer(MainLayerFolder + '/base/{z}/{x}/{y}.png', {
             noWrap: true,
             preferCanvas: true,
-            bounds: mapBounds
+            bounds: mapBounds,
+            maxNativeZoom: 7,
+            maxZoom: 7
         }).addTo(map)
 
         const BrandenlandsInsetTileLayer = L.tileLayer(BrandenlandsInset.tiles, {
@@ -1226,7 +1259,7 @@
                         preferCanvas: true,
                         bounds: mapBounds,
                         opacity: 1,
-                        maxNativeZoom: 4,
+                        maxNativeZoom: 5,
                         maxZoom: 7,
                         zIndex: 650 + zOrder
                     })
@@ -1516,6 +1549,46 @@
             }
         }
 
+
+        // Add map click event to display coordinates
+        /*
+        map.on('click', function (e) {
+            // Get the clicked point coordinates in the original image coordinate system
+            const point = rc.project(e.latlng);
+            const x = Math.round(point.x);
+            const y = Math.round(point.y);
+
+            // Create a dot marker at the exact click location
+            const dot = L.circleMarker(e.latlng, {
+                radius: 2,
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 1,
+                weight: 2
+            }).addTo(map);
+
+            // Create a temporary marker to show the clicked location with coordinates
+            const marker = L.marker(e.latlng, {
+                icon: L.divIcon({
+                    className: 'coordinate-marker',
+                    html: `<div style="background-color: white; ">
+                            <strong>X:</strong> ${x}, <strong>Y:</strong> ${y}
+                           </div>`,
+                    iconSize: [100, 40],
+                    iconAnchor: [50, 40]
+                })
+            }).addTo(map);
+
+            // Remove both markers after 3 seconds
+            setTimeout(() => {
+                map.removeLayer(marker);
+                map.removeLayer(dot);
+            }, 3000);
+
+            // Log coordinates to console
+            console.log(`Clicked at coordinates: X: ${x}, Y: ${y}`);
+        });
+        */
 
         function arrayIncludesAny(array1, array2) {
             return array2.some(item => array1.includes(item));
